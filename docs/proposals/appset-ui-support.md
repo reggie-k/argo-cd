@@ -33,10 +33,11 @@ For App, the data is received from the backend and consists of the resources the
 For AppSet, the tree consists of the Apps, that have an ownerRefrence on the AppSet.
 Looks like the backend has to have a method to return the AppSet resurce tree. 
 
-
+An icon is needed for AppSet (ideas might be an icon of a Factory, or the existing App icon surrounded by {} - mathematic visualization of a set of Apps, or others)
 ## Summary
 
 Currently, the users have no option to view AppSets in the UI as a first-class resource (they can only view them if the AppSets themselves are managed by an App).
+
 
 ## Motivation
 
@@ -54,7 +55,11 @@ For the first phase, creating, updating and viewing user-friendly summary on det
 
 ## Proposal
 
-Please see the attached INITIAL screenshots to demonstrate some of the filter fields, toolbar and sidebar options, and detailed view along with a resource tree view.
+Please see the attached INITIAL screenshots in ``` images ``` folder to demonstrate some of the filter fields, toolbar and sidebar options, and detailed view along with a resource tree view.
 
-AppSet would resemble how the App looks and feels in the UI, while sticking to it's Model fields.
+AppSet would resemble how the App looks and feels in the UI, while sticking to it's Model fields and relevant actions/filters.
+
+This is the code with the partial implementation, based on duplication of the relevant App components (the final implementation will probably not be based on duplication but rather on extending what already exists):
+
+https://github.com/reggie-k/argo-cd/tree/appset-ui-search
 
