@@ -59,6 +59,8 @@ Please see the attached INITIAL screenshots in ``` images ``` folder to demonstr
 
 AppSet would resemble how the App looks and feels in the UI, while sticking to it's Model fields and relevant actions/filters.
 
+AppSets would be currently available for admins, under the Settings section.
+
 This is the code with the partial implementation, based on duplication of the relevant App components (the final implementation will probably not be based on duplication but rather on extending what already exists):
 
 https://github.com/reggie-k/argo-cd/tree/appset-ui-search
