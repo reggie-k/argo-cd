@@ -5,7 +5,7 @@ import * as React from 'react';
 import {Helmet} from 'react-helmet';
 import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router';
 import applications from './applications';
-import applicationsets from './applicationsets';
+// import applicationsets from './applicationsets';
 import help from './help';
 import login from './login';
 import settings from './settings';
