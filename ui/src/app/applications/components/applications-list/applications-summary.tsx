@@ -1,10 +1,10 @@
 import * as React from 'react';
 const PieChart = require('react-svg-piechart').default;
 
-import {COLORS} from '../../../shared/components';
+import { COLORS } from '../../../shared/components';
 import * as models from '../../../shared/models';
-import {HealthStatusCode, SyncStatusCode} from '../../../shared/models';
-import {ComparisonStatusIcon, HealthStatusIcon} from '../utils';
+import { HealthStatusCode, SyncStatusCode } from '../../../shared/models';
+import { ComparisonStatusIcon, HealthStatusIcon, isAppSet } from '../utils';
 
 const healthColors = new Map<models.HealthStatusCode, string>();
 healthColors.set('Unknown', COLORS.health.unknown);
@@ -14,52 +14,77 @@ healthColors.set('Healthy', COLORS.health.healthy);
 healthColors.set('Degraded', COLORS.health.degraded);
 healthColors.set('Missing', COLORS.health.missing);
 
+const appSetHealthColors = new Map<models.ApplicationSetConditionStatus, string>();
+appSetHealthColors.set('Unknown', COLORS.health.unknown);
+appSetHealthColors.set('True', COLORS.health.healthy);
+appSetHealthColors.set('False', COLORS.health.degraded);
+
 const syncColors = new Map<models.SyncStatusCode, string>();
 syncColors.set('Unknown', COLORS.sync.unknown);
 syncColors.set('Synced', COLORS.sync.synced);
 syncColors.set('OutOfSync', COLORS.sync.out_of_sync);
 
-export const ApplicationsSummary = ({applications}: {applications: models.Application[]}) => {
-    const sync = new Map<string, number>();
-    applications.forEach(app => sync.set(app.status.sync.status, (sync.get(app.status.sync.status) || 0) + 1));
+export const ApplicationsSummary = ({ applications }: { applications: models.AbstractApplication[] }) => {
     const health = new Map<string, number>();
-    applications.forEach(app => health.set(app.status.health.status, (health.get(app.status.health.status) || 0) + 1));
-
-    const attributes = [
+    const attributes = isAppSet(applications[0]) ? ([
         {
-            title: 'APPLICATIONS',
+            title: 'APPLICATIONSETS',
             value: applications.length
-        },
-        {
-            title: 'SYNCED',
-            value: applications.filter(app => app.status.sync.status === 'Synced').length
         },
         {
             title: 'HEALTHY',
             value: applications.filter(app => app.status.health.status === 'Healthy').length
-        },
-        {
-            title: 'CLUSTERS',
-            value: new Set(applications.map(app => app.spec.destination.server)).size
-        },
-        {
-            title: 'NAMESPACES',
-            value: new Set(applications.map(app => app.spec.destination.namespace)).size
         }
-    ];
+    ]) : ([{
+        title: 'APPLICATIONS',
+        value: applications.length
+    },
+    {
+        title: 'SYNCED',
+        value: applications.filter(app => app.status.sync.status === 'Synced').length
+    },
+    {
+        title: 'HEALTHY',
+        value: applications.filter(app => app.status.health.status === 'Healthy').length
+    },
+    {
+        title: 'CLUSTERS',
+        value: new Set(applications.map(app => app.spec.destination.server)).size
+    },
+    {
+        title: 'NAMESPACES',
+        value: new Set(applications.map(app => app.spec.destination.namespace)).size
+    }]);
 
-    const charts = [
+    const sync = new Map<string, number>();
+
+    const charts = isAppSet(applications[0]) ? ([
+        {
+            title: 'Health',
+            data: Array.from(health.keys()).map(key => ({ title: key, value: health.get(key), color: healthColors.get(key as models.HealthStatusCode) })),
+            legend: healthColors as Map<string, string>
+        }
+    ]) : ([
         {
             title: 'Sync',
-            data: Array.from(sync.keys()).map(key => ({title: key, value: sync.get(key), color: syncColors.get(key as models.SyncStatusCode)})),
+            data: Array.from(sync.keys()).map(key => ({ title: key, value: sync.get(key), color: syncColors.get(key as models.SyncStatusCode) })),
             legend: syncColors as Map<string, string>
         },
         {
             title: 'Health',
-            data: Array.from(health.keys()).map(key => ({title: key, value: health.get(key), color: healthColors.get(key as models.HealthStatusCode)})),
+            data: Array.from(health.keys()).map(key => ({ title: key, value: health.get(key), color: healthColors.get(key as models.HealthStatusCode) })),
             legend: healthColors as Map<string, string>
         }
-    ];
+    ]);
+
+    if (isAppSet(applications[0])) {
+        applications.forEach(app => health.set(app.status.conditions[0].status, (health.get(app.status.conditions[0].status) || 0) + 1));
+    }
+    else {
+        applications.forEach(app => sync.set(app.status.sync.status, (sync.get(app.status.sync.status) || 0) + 1));
+        applications.forEach(app => health.set(app.status.health.status, (health.get(app.status.health.status) || 0) + 1));
+    }
+
     return (
         <div className='white-box applications-list__summary'>
             <div className='row'>
@@ -69,7 +94,7 @@ export const ApplicationsSummary = ({applications}: {applications: models.Applic
                         {attributes.map(attr => (
                             <div className='row white-box__details-row' key={attr.title}>
                                 <div className='columns small-8'>{attr.title}</div>
-                                <div style={{textAlign: 'right'}} className='columns small-4'>
+                                <div style={{ textAlign: 'right' }} className='columns small-4'>
                                     {attr.value}
                                 </div>
                             </div>
@@ -80,7 +105,7 @@ export const ApplicationsSummary = ({applications}: {applications: models.Applic
                     <div className='row chart-group'>
                         {charts.map(chart => {
                             const getLegendValue = (key: string) => {
-                                const index = chart.data.findIndex((data: {title: string}) => data.title === key);
+                                const index = chart.data.findIndex((data: { title: string }) => data.title === key);
                                 return index > -1 ? chart.data[index].value : 0;
                             };
                             return (
@@ -88,14 +113,15 @@ export const ApplicationsSummary = ({applications}: {applications: models.Applic
                                     <div className='columns large-6 small-12'>
                                         <div className='row chart'>
                                             <div className='large-8 small-6'>
-                                                <h4 style={{textAlign: 'center'}}>{chart.title}</h4>
+                                                <h4 style={{ textAlign: 'center' }}>{chart.title}</h4>
                                                 <PieChart data={chart.data} />
                                             </div>
                                             <div className='large-3 small-1'>
                                                 <ul>
                                                     {Array.from(chart.legend.keys()).map(key => (
-                                                        <li style={{listStyle: 'none', whiteSpace: 'nowrap'}} key={key}>
-                                                            {chart.title === 'Health' && <HealthStatusIcon state={{status: key as HealthStatusCode, message: ''}} noSpin={true} />}
+                                                        <li style={{ listStyle: 'none', whiteSpace: 'nowrap' }} key={key}>
+                                                            {chart.title === 'Health' && <HealthStatusIcon state={{ status: key as HealthStatusCode, message: '' }} noSpin={true} />}
+                                                            {/* {chart.title === 'Health' && <AppSetHealthStatusIcon state={{conditions : key as ApplicationSetConditionStatus}} noSpin={true} />}  */}
                                                             {chart.title === 'Sync' && <ComparisonStatusIcon status={key as SyncStatusCode} noSpin={true} />}
                                                             {` ${key} (${getLegendValue(key)})`}
                                                         </li>

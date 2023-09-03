@@ -1,20 +1,40 @@
 import * as React from 'react';
 import {Sidebar} from '../../../sidebar/sidebar';
-import {ViewPreferences} from '../../services';
+import {ViewPreferences, AppSetViewPreferences} from '../../services';
 
 require('./layout.scss');
 
-export interface LayoutProps {
+export interface AbstractLayoutProps {
     navItems: Array<{path: string; iconClassName: string; title: string}>;
     onVersionClick?: () => void;
     children?: React.ReactNode;
-    pref: ViewPreferences;
+    pref: any;
     isExtension?: boolean;
+}
+
+export interface LayoutProps extends AbstractLayoutProps {
+    // navItems: Array<{path: string; iconClassName: string; title: string}>;
+    // onVersionClick?: () => void;
+    // children?: React.ReactNode;
+    pref: ViewPreferences;
+    // isExtension?: boolean;
+}
+
+export interface AppSetLayoutProps extends AbstractLayoutProps {
+    // navItems: Array<{path: string; iconClassName: string; title: string}>;
+    // onVersionClick?: () => void;
+    // children?: React.ReactNode;
+    pref: AppSetViewPreferences;
+    // isExtension?: boolean;
 }
 
 const getBGColor = (theme: string): string => (theme === 'light' ? '#dee6eb' : '#100f0f');
 
-export const Layout = (props: LayoutProps) => (
+// export interface AppSetLayoutProps extends AbstractLayoutProps {
+//     pref: AppSetViewPreferences;
+// }
+
+export const Layout = (props: AbstractLayoutProps) => (
     <div className={props.pref.theme ? 'theme-' + props.pref.theme : 'theme-light'}>
         <div className={`cd-layout ${props.isExtension ? 'cd-layout--extension' : ''}`}>
             <Sidebar onVersionClick={props.onVersionClick} navItems={props.navItems} pref={props.pref} />
@@ -25,3 +45,14 @@ export const Layout = (props: LayoutProps) => (
         </div>
     </div>
 );
+
+// export const AppSetLayout = (props: AppSetLayoutProps) => (
+//     <div className={props.pref.theme ? 'theme-' + props.pref.theme : 'theme-light'}>
+//         <div className={`cd-layout ${props.isExtension ? 'cd-layout--extension' : ''}`}>
+//             <AppSetSidebar onVersionClick={props.onVersionClick} navItems={props.navItems} pref={props.pref} />
+//             <div className={`cd-layout__content ${props.pref.hideSidebar ? 'cd-layout__content--sb-collapsed' : 'cd-layout__content--sb-expanded'} custom-styles`}>
+//                 {props.children}
+//             </div>
+//         </div>
+//     </div>
+// );
