@@ -876,6 +876,7 @@ function findNetworkTargets(nodes: ResourceTreeNode[], networkingInfo: models.Re
     return result;
 }
 export const ApplicationResourceTree = (props: ApplicationResourceTreeProps) => {
+    // debugger;
     const graph = new dagre.graphlib.Graph();
     graph.setGraph({nodesep: 25, rankdir: 'LR', marginy: 45, marginx: -100, ranksep: 80});
     graph.setDefaultEdgeLabel(() => ({}));

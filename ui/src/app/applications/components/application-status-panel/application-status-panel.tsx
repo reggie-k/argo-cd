@@ -12,7 +12,7 @@ import {RevisionMetadataPanel} from './revision-metadata-panel';
 import './application-status-panel.scss';
 
 interface Props {
-    application: models.Application;
+    application: models.AbstractApplication;
     showDiff?: () => any;
     showOperation?: () => any;
     showConditions?: () => any;

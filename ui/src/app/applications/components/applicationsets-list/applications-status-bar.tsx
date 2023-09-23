@@ -5,30 +5,30 @@ import {Consumer} from '../../../shared/context';
 import * as models from '../../../shared/models';
 
 import './applications-status-bar.scss';
-import { isAppSet } from '../utils';
 
 export interface ApplicationsStatusBarProps {
-    applications: models.AbstractApplication[];
+    applications: models.ApplicationSet[];
 }
 
 export const ApplicationsStatusBar = ({applications}: ApplicationsStatusBarProps) => {
-    const appReadings = [
+    const readings = [
         {
             name: 'Healthy',
-            value: applications.filter(app => app.status.health.status === 'Healthy').length,
+            value: applications.filter(app => app.status.conditions[0].status === 'True').length,
             color: COLORS.health.healthy
         },
-        {
+      /*  {
             name: 'Progressing',
             value: applications.filter(app => app.status.health.status === 'Progressing').length,
             color: COLORS.health.progressing
         },
+        */
         {
             name: 'Degraded',
-            value: applications.filter(app => app.status.health.status === 'Degraded').length,
+            value: applications.filter(app => app.status.conditions[0].status === 'False').length,
             color: COLORS.health.degraded
         },
-        {
+        /*{
             name: 'Suspended',
             value: applications.filter(app => app.status.health.status === 'Suspended').length,
             color: COLORS.health.suspended
@@ -38,33 +38,15 @@ export const ApplicationsStatusBar = ({applications}: ApplicationsStatusBarProps
             value: applications.filter(app => app.status.health.status === 'Missing').length,
             color: COLORS.health.missing
         },
+        */
         {
             name: 'Unknown',
-            value: applications.filter(app => app.status.health.status === 'Unknown').length,
-            color: COLORS.health.unknown
-        }
-    ];
-
-    const appSetReadings = [
-        {
-            name: 'Healthy',
-            value: applications.filter(app => app.status.conditions[0].status === 'True').length,
-            color: COLORS.health.healthy
-        },
-        {
-            name: 'Degraded',
-            value: applications.filter(app => app.status.conditions[0].status === 'False').length,
-            color: COLORS.health.degraded
-        },
-        {
-            name: 'Unknown',
-            value:applications.filter(app => app.status.conditions[0].status === 'Unknown').length,
+            value: applications.filter(app => app.status.conditions[0].status === 'Unknown').length,
             color: COLORS.health.unknown
         }
     ];
 
     // will sort readings by value greatest to lowest, then by name
-    const readings = !isAppSet(applications[0]) ? appReadings : appSetReadings
     readings.sort((a, b) => (a.value < b.value ? 1 : a.value === b.value ? (a.name > b.name ? 1 : -1) : -1));
 
     const totalItems = readings.reduce((total, i) => {
