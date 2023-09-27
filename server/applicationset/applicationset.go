@@ -280,6 +280,37 @@ func (s *Server) Delete(ctx context.Context, q *applicationset.ApplicationSetDel
 
 }
 
+func (s *Server) ResourceTree(ctx context.Context, q *applicationset.ApplicationSetGetQuery) (*v1alpha1.ApplicationSetTree, error) {
+	namespace := s.appsetNamespaceOrDefault(q.AppsetNamespace)
+
+	if !s.isNamespaceEnabled(namespace) {
+		return nil, security.NamespaceNotPermittedError(namespace)
+	}
+
+	a, err := s.appclientset.ArgoprojV1alpha1().ApplicationSets(namespace).Get(ctx, q.Name, metav1.GetOptions{})
+
+	if err != nil {
+		return nil, fmt.Errorf("error getting ApplicationSet: %w", err)
+	}
+	if err = s.enf.EnforceErr(ctx.Value("claims"), rbacpolicy.ResourceApplicationSets, rbacpolicy.ActionGet, a.RBACName(s.ns)); err != nil {
+		return nil, err
+	}
+
+
+	return s.getAppSetApplications(ctx, a)
+}
+
+func (s *Server) getAppSetApplications(ctx context.Context, a *v1alpha1.ApplicationSet) (*v1alpha1.ApplicationSetTree, error) {
+	var tree v1alpha1.ApplicationSetTree
+	err := s.getCachedAppState(ctx, a, func() error {
+		return s.cache.GetApplicationSetTree(a.Name, &tree)
+	})
+	if err != nil {
+		return &tree, fmt.Errorf("error getting cached app resource tree: %w", err)
+	}
+	return &tree, nil
+}
+
 func (s *Server) validateAppSet(ctx context.Context, appset *v1alpha1.ApplicationSet) (string, error) {
 	if appset == nil {
 		return "", fmt.Errorf("ApplicationSet cannot be validated for nil value")

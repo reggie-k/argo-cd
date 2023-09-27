@@ -58,6 +58,10 @@ func (c *Cache) GetAppResourcesTree(appName string, res *appv1.ApplicationTree) 
 	return c.cache.GetAppResourcesTree(appName, res)
 }
 
+func (c *Cache) GetApplicationSetTree(appSetName string, res *appv1.ApplicationSetTree) error {
+	return c.cache.GetAppSetApplicationsTree(appSetName, res)
+}
+
 func (c *Cache) OnAppResourcesTreeChanged(ctx context.Context, appName string, callback func() error) error {
 	return c.cache.OnAppResourcesTreeChanged(ctx, appName, callback)
 }

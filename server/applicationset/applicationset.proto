@@ -73,4 +73,9 @@ service ApplicationSetService {
 		option (google.api.http).delete = "/api/v1/applicationsets/{name}";
 	}
 
+  // ResourceTree returns resource tree
+	rpc ResourceTree(ApplicationSetGetQuery) returns (github.com.argoproj.argo_cd.v2.pkg.apis.application.v1alpha1.ApplicationSetTree) {
+		option (google.api.http).get = "/api/v1/applicationsets/{name}/resource-tree";
+	}
+
 }

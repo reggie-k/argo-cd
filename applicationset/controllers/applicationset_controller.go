@@ -1485,6 +1485,19 @@ func getOwnsHandlerPredicates(enableProgressiveSyncs bool) predicate.Funcs {
 	}
 }
 
+func (r *ApplicationSetReconciler) getApplicationsTree(appSet *argov1alpha1.ApplicationSet, applications []*argov1alpha1.Application) (*argov1alpha1.ApplicationSetTree, error) {
+	nodes := make([]argov1alpha1.ResourceNode, 0)
+
+  for _, app := range applications {
+    node := argov1alpha1.ResourceNode{
+      
+    }
+    nodes = append(nodes, node)
+  }
+
+  return &argov1alpha1.ApplicationSetTree{}, nil
+}
+
 // shouldRequeueApplicationSet determines when we want to requeue an ApplicationSet for reconciling based on an owned
 // application change
 // The applicationset controller owns a subset of the Application CR.
