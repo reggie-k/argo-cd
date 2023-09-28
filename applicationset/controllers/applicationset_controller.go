@@ -1489,9 +1489,7 @@ func (r *ApplicationSetReconciler) getApplicationsTree(appSet *argov1alpha1.Appl
 	nodes := make([]argov1alpha1.ResourceNode, 0)
 
   for _, app := range applications {
-    node := argov1alpha1.ResourceNode{
-      
-    }
+    r.cac 
     nodes = append(nodes, node)
   }
 

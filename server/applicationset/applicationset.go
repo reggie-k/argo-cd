@@ -302,13 +302,27 @@ func (s *Server) ResourceTree(ctx context.Context, q *applicationset.Application
 
 func (s *Server) getAppSetApplications(ctx context.Context, a *v1alpha1.ApplicationSet) (*v1alpha1.ApplicationSetTree, error) {
 	var tree v1alpha1.ApplicationSetTree
-	err := s.getCachedAppState(ctx, a, func() error {
-		return s.cache.GetApplicationSetTree(a.Name, &tree)
-	})
+	
+  err := s.cache.GetApplicationSetTree(a.Name, &tree)
 	if err != nil {
 		return &tree, fmt.Errorf("error getting cached app resource tree: %w", err)
 	}
 	return &tree, nil
+}
+
+func (s *Server) getCachedAppSetAppliations(ctx context.Context, a *v1alpha1.ApplicationSet, getFromCache func() error) error {
+	err := getFromCache()
+	if err != nil && err == servercache.ErrCacheMiss {
+    cluster, err := s.db.GetCluster(context.Background(), "in-cluster")
+    if err != nil {
+      return fmt.Errorf("error getting cluster: %w", err)
+    }
+
+    cluster.Iter
+
+		return getFromCache()
+	}
+	return err
 }
 
 func (s *Server) validateAppSet(ctx context.Context, appset *v1alpha1.ApplicationSet) (string, error) {
