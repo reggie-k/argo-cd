@@ -170,6 +170,23 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// appSyncMap tracks which apps will be synced during this reconciliation.
 	appSyncMap := map[string]bool{}
 
+	currentApplications, err := r.getCurrentApplications(ctx, applicationSetInfo)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get current applications for application set: %w", err)
+	}
+
+	statuses := make([]argov1alpha1.ApplicationSetApplicationStatus, 0)
+	for _, app := range currentApplications {
+		appMap[app.Name] = app
+
+		status := argov1alpha1.ApplicationSetApplicationStatus{
+			Application: app.Name,
+			Health:      app.Status.Health,
+		}
+		statuses = append(statuses, status)
+	}
+	r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statuses)
+
 	if r.EnableProgressiveSyncs {
 		if applicationSetInfo.Spec.Strategy == nil && len(applicationSetInfo.Status.ApplicationStatus) > 0 {
 			// If appset used progressive sync but stopped, clean up the progressive sync application statuses
@@ -179,18 +196,8 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to clear previous AppSet application statuses for %v: %w", applicationSetInfo.Name, err)
 			}
-		} else if applicationSetInfo.Spec.Strategy != nil {
-			// appset uses progressive sync
-			applications, err := r.getCurrentApplications(ctx, applicationSetInfo)
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to get current applications for application set: %w", err)
-			}
-
-			for _, app := range applications {
-				appMap[app.Name] = app
-			}
-
-			appSyncMap, err = r.performProgressiveSyncs(ctx, logCtx, applicationSetInfo, applications, desiredApplications, appMap)
+		} else {
+			appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap)
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
 			}
@@ -1061,7 +1068,7 @@ func appSyncEnabledForNextStep(appset *argov1alpha1.ApplicationSet, app argov1al
 
 	if progressiveSyncsStrategyEnabled(appset, "RollingSync") {
 		// we still need to complete the current step if the Application is not yet Healthy or there are still pending Application changes
-		return isApplicationHealthy(app) && appStatus.Status == "Healthy"
+		return isApplicationHealthy(app) && appStatus.ProgressiveSync.Status == "Healthy"
 	}
 
 	return true
@@ -1116,11 +1123,13 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 		if idx == -1 {
 			// AppStatus not found, set default status of "Waiting"
 			currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
-				Application:        app.Name,
-				LastTransitionTime: &now,
-				Message:            "No Application status found, defaulting status to Waiting.",
-				Status:             "Waiting",
-				Step:               fmt.Sprint(appStepMap[app.Name] + 1),
+				Application: app.Name,
+				ProgressiveSync: &argov1alpha1.ProgressiveSyncStatus{
+					LastTransitionTime: &now,
+					Message:            "No Application status found, defaulting status to Waiting.",
+					Status:             "Waiting",
+					Step:               fmt.Sprint(appStepMap[app.Name] + 1),
+				},
 			}
 		} else {
 			// we have an existing AppStatus
@@ -1132,49 +1141,49 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 			appOutdated = syncStatusString == "OutOfSync"
 		}
 
-		if appOutdated && currentAppStatus.Status != "Waiting" && currentAppStatus.Status != "Pending" {
+		if appOutdated && currentAppStatus.ProgressiveSync.Status != "Waiting" && currentAppStatus.ProgressiveSync.Status != "Pending" {
 			logCtx.Infof("Application %v is outdated, updating its ApplicationSet status to Waiting", app.Name)
-			currentAppStatus.LastTransitionTime = &now
-			currentAppStatus.Status = "Waiting"
-			currentAppStatus.Message = "Application has pending changes, setting status to Waiting."
-			currentAppStatus.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
+			currentAppStatus.ProgressiveSync.LastTransitionTime = &now
+			currentAppStatus.ProgressiveSync.Status = "Waiting"
+			currentAppStatus.ProgressiveSync.Message = "Application has pending changes, setting status to Waiting."
+			currentAppStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 		}
 
-		if currentAppStatus.Status == "Pending" {
+		if currentAppStatus.ProgressiveSync.Status == "Pending" {
 			// check for successful syncs started less than 10s before the Application transitioned to Pending
 			// this covers race conditions where syncs initiated by RollingSync miraculously have a sync time before the transition to Pending state occurred (could be a few seconds)
-			if operationPhaseString == "Succeeded" && app.Status.OperationState.StartedAt.Add(time.Duration(10)*time.Second).After(currentAppStatus.LastTransitionTime.Time) {
-				if !app.Status.OperationState.StartedAt.After(currentAppStatus.LastTransitionTime.Time) {
+			if operationPhaseString == "Succeeded" && app.Status.OperationState.StartedAt.Add(time.Duration(10)*time.Second).After(currentAppStatus.ProgressiveSync.LastTransitionTime.Time) {
+				if !app.Status.OperationState.StartedAt.After(currentAppStatus.ProgressiveSync.LastTransitionTime.Time) {
 					logCtx.Warnf("Application %v was synced less than 10s prior to entering Pending status, we'll assume the AppSet controller triggered this sync and update its status to Progressing", app.Name)
 				}
 				logCtx.Infof("Application %v has completed a sync successfully, updating its ApplicationSet status to Progressing", app.Name)
-				currentAppStatus.LastTransitionTime = &now
-				currentAppStatus.Status = "Progressing"
-				currentAppStatus.Message = "Application resource completed a sync successfully, updating status from Pending to Progressing."
-				currentAppStatus.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
+				currentAppStatus.ProgressiveSync.LastTransitionTime = &now
+				currentAppStatus.ProgressiveSync.Status = "Progressing"
+				currentAppStatus.ProgressiveSync.Message = "Application resource completed a sync successfully, updating status from Pending to Progressing."
+				currentAppStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 			} else if operationPhaseString == "Running" || healthStatusString == "Progressing" {
 				logCtx.Infof("Application %v has entered Progressing status, updating its ApplicationSet status to Progressing", app.Name)
-				currentAppStatus.LastTransitionTime = &now
-				currentAppStatus.Status = "Progressing"
-				currentAppStatus.Message = "Application resource became Progressing, updating status from Pending to Progressing."
-				currentAppStatus.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
+				currentAppStatus.ProgressiveSync.LastTransitionTime = &now
+				currentAppStatus.ProgressiveSync.Status = "Progressing"
+				currentAppStatus.ProgressiveSync.Message = "Application resource became Progressing, updating status from Pending to Progressing."
+				currentAppStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 			}
 		}
 
-		if currentAppStatus.Status == "Waiting" && isApplicationHealthy(app) {
+		if currentAppStatus.ProgressiveSync.Status == "Waiting" && isApplicationHealthy(app) {
 			logCtx.Infof("Application %v is already synced and healthy, updating its ApplicationSet status to Healthy", app.Name)
-			currentAppStatus.LastTransitionTime = &now
-			currentAppStatus.Status = healthStatusString
-			currentAppStatus.Message = "Application resource is already Healthy, updating status from Waiting to Healthy."
-			currentAppStatus.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
+			currentAppStatus.ProgressiveSync.LastTransitionTime = &now
+			currentAppStatus.ProgressiveSync.Status = healthStatusString
+			currentAppStatus.ProgressiveSync.Message = "Application resource is already Healthy, updating status from Waiting to Healthy."
+			currentAppStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 		}
 
-		if currentAppStatus.Status == "Progressing" && isApplicationHealthy(app) {
+		if currentAppStatus.ProgressiveSync.Status == "Progressing" && isApplicationHealthy(app) {
 			logCtx.Infof("Application %v has completed Progressing status, updating its ApplicationSet status to Healthy", app.Name)
-			currentAppStatus.LastTransitionTime = &now
-			currentAppStatus.Status = healthStatusString
-			currentAppStatus.Message = "Application resource became Healthy, updating status from Progressing to Healthy."
-			currentAppStatus.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
+			currentAppStatus.ProgressiveSync.LastTransitionTime = &now
+			currentAppStatus.ProgressiveSync.Status = healthStatusString
+			currentAppStatus.ProgressiveSync.Message = "Application resource became Healthy, updating status from Progressing to Healthy."
+			currentAppStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 		}
 
 		appStatuses = append(appStatuses, currentAppStatus)
@@ -1213,7 +1222,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 			totalCountMap[appStepMap[appStatus.Application]] += 1
 
 			if progressiveSyncsStrategyEnabled(applicationSet, "RollingSync") {
-				if appStatus.Status == "Pending" || appStatus.Status == "Progressing" {
+				if appStatus.ProgressiveSync.Status == "Pending" || appStatus.ProgressiveSync.Status == "Progressing" {
 					updateCountMap[appStepMap[appStatus.Application]] += 1
 				}
 			}
@@ -1246,12 +1255,12 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 
 			}
 
-			if appStatus.Status == "Waiting" && appSyncMap[appStatus.Application] && maxUpdateAllowed {
+			if appStatus.ProgressiveSync.Status == "Waiting" && appSyncMap[appStatus.Application] && maxUpdateAllowed {
 				logCtx.Infof("Application %v moved to Pending status, watching for the Application to start Progressing", appStatus.Application)
-				appStatus.LastTransitionTime = &now
-				appStatus.Status = "Pending"
-				appStatus.Message = "Application moved to Pending status, watching for the Application resource to start Progressing."
-				appStatus.Step = fmt.Sprint(appStepMap[appStatus.Application] + 1)
+				appStatus.ProgressiveSync.LastTransitionTime = &now
+				appStatus.ProgressiveSync.Status = "Pending"
+				appStatus.ProgressiveSync.Message = "Application moved to Pending status, watching for the Application resource to start Progressing."
+				appStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[appStatus.Application] + 1)
 
 				updateCountMap[appStepMap[appStatus.Application]] += 1
 			}
@@ -1272,7 +1281,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusConditio
 
 	appSetProgressing := false
 	for _, appStatus := range applicationSet.Status.ApplicationStatus {
-		if appStatus.Status != "Healthy" {
+		if appStatus.ProgressiveSync.Status != "Healthy" {
 			appSetProgressing = true
 			break
 		}
@@ -1336,7 +1345,7 @@ func (r *ApplicationSetReconciler) setAppSetApplicationStatus(ctx context.Contex
 				break
 			}
 			currentStatus := applicationSet.Status.ApplicationStatus[idx]
-			if currentStatus.Message != appStatus.Message || currentStatus.Status != appStatus.Status || currentStatus.Step != appStatus.Step {
+			if currentStatus.Health != appStatus.Health || (currentStatus.ProgressiveSync.Message != appStatus.ProgressiveSync.Message || currentStatus.ProgressiveSync.Status != appStatus.ProgressiveSync.Status || currentStatus.ProgressiveSync.Step != appStatus.ProgressiveSync.Step) {
 				needToUpdateStatus = true
 				break
 			}
@@ -1384,7 +1393,7 @@ func (r *ApplicationSetReconciler) syncValidApplications(logCtx *log.Entry, appl
 
 		appSetStatusPending := false
 		idx := findApplicationStatusIndex(applicationSet.Status.ApplicationStatus, validApps[i].Name)
-		if idx > -1 && applicationSet.Status.ApplicationStatus[idx].Status == "Pending" {
+		if idx > -1 && applicationSet.Status.ApplicationStatus[idx].ProgressiveSync.Status == "Pending" {
 			// only trigger a sync for Applications that are in Pending status, since this is governed by maxUpdate
 			appSetStatusPending = true
 		}
@@ -1485,17 +1494,6 @@ func getOwnsHandlerPredicates(enableProgressiveSyncs bool) predicate.Funcs {
 	}
 }
 
-func (r *ApplicationSetReconciler) getApplicationsTree(appSet *argov1alpha1.ApplicationSet, applications []*argov1alpha1.Application) (*argov1alpha1.ApplicationSetTree, error) {
-	nodes := make([]argov1alpha1.ResourceNode, 0)
-
-  for _, app := range applications {
-    r.cac 
-    nodes = append(nodes, node)
-  }
-
-  return &argov1alpha1.ApplicationSetTree{}, nil
-}
-
 // shouldRequeueApplicationSet determines when we want to requeue an ApplicationSet for reconciling based on an owned
 // application change
 // The applicationset controller owns a subset of the Application CR.
@@ -1516,16 +1514,14 @@ func shouldRequeueApplicationSet(appOld *argov1alpha1.Application, appNew *argov
 	}
 
 	// progressive syncs use the application status for updates. if they differ, requeue to trigger the next progression
-	if enableProgressiveSyncs {
-		if appOld.Status.Health.Status != appNew.Status.Health.Status || appOld.Status.Sync.Status != appNew.Status.Sync.Status {
-			return true
-		}
+	if appOld.Status.Health.Status != appNew.Status.Health.Status || appOld.Status.Sync.Status != appNew.Status.Sync.Status {
+		return true
+	}
 
-		if appOld.Status.OperationState != nil && appNew.Status.OperationState != nil {
-			if appOld.Status.OperationState.Phase != appNew.Status.OperationState.Phase ||
-				appOld.Status.OperationState.StartedAt != appNew.Status.OperationState.StartedAt {
-				return true
-			}
+	if appOld.Status.OperationState != nil && appNew.Status.OperationState != nil {
+		if appOld.Status.OperationState.Phase != appNew.Status.OperationState.Phase ||
+			appOld.Status.OperationState.StartedAt != appNew.Status.OperationState.StartedAt {
+			return true
 		}
 	}
 

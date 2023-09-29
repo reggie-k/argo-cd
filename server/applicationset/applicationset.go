@@ -311,18 +311,7 @@ func (s *Server) getAppSetApplications(ctx context.Context, a *v1alpha1.Applicat
 }
 
 func (s *Server) getCachedAppSetAppliations(ctx context.Context, a *v1alpha1.ApplicationSet, getFromCache func() error) error {
-	err := getFromCache()
-	if err != nil && err == servercache.ErrCacheMiss {
-    cluster, err := s.db.GetCluster(context.Background(), "in-cluster")
-    if err != nil {
-      return fmt.Errorf("error getting cluster: %w", err)
-    }
-
-    cluster.Iter
-
-		return getFromCache()
-	}
-	return err
+	return nil
 }
 
 func (s *Server) validateAppSet(ctx context.Context, appset *v1alpha1.ApplicationSet) (string, error) {
