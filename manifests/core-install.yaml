@@ -20134,20 +20134,31 @@ spec:
                   properties:
                     application:
                       type: string
-                    lastTransitionTime:
-                      format: date-time
-                      type: string
-                    message:
-                      type: string
-                    status:
-                      type: string
-                    step:
-                      type: string
+                    health:
+                      properties:
+                        message:
+                          type: string
+                        status:
+                          type: string
+                      type: object
+                    progressiveSyncStatus:
+                      properties:
+                        lastTransitionTime:
+                          format: date-time
+                          type: string
+                        message:
+                          type: string
+                        status:
+                          type: string
+                        step:
+                          type: string
+                      required:
+                      - message
+                      - status
+                      - step
+                      type: object
                   required:
                   - application
-                  - message
-                  - status
-                  - step
                   type: object
                 type: array
               conditions:

@@ -824,14 +824,12 @@ type ApplicationSetApplicationStatus struct {
 	// Application contains the name of the Application resource
 	Application string `json:"application" protobuf:"bytes,1,opt,name=application"`
 
-  ProgressiveSync *ProgressiveSyncStatus `json:"progressiveSyncStatus,omitempty" protobuf:"bytes,2,opt,name=progressiveSyncStatus"`
-  Health HealthStatus `json:"health,omitempty" protobuf:"bytes,3,opt,name=health"`
+	ProgressiveSync *ProgressiveSyncStatus `json:"progressiveSyncStatus,omitempty" protobuf:"bytes,2,opt,name=progressiveSyncStatus"`
+	Health          HealthStatus           `json:"health,omitempty" protobuf:"bytes,3,opt,name=health"`
 }
 
-
-
 type ProgressiveSyncStatus struct {
-  	// LastTransitionTime is the time the status was last updated
+	// LastTransitionTime is the time the status was last updated
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,2,opt,name=lastTransitionTime"`
 	// Message contains human-readable message indicating details about the status
 	Message string `json:"message" protobuf:"bytes,3,opt,name=message"`

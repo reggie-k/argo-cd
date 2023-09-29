@@ -182,17 +182,9 @@ message ApplicationSetApplicationStatus {
   // Application contains the name of the Application resource
   optional string application = 1;
 
-  // LastTransitionTime is the time the status was last updated
-  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 2;
+  optional ProgressiveSyncStatus progressiveSyncStatus = 2;
 
-  // Message contains human-readable message indicating details about the status
-  optional string message = 3;
-
-  // Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
-  optional string status = 4;
-
-  // Step tracks which step this Application should be updated in
-  optional string step = 5;
+  optional HealthStatus health = 3;
 }
 
 // ApplicationSetCondition contains details about an applicationset condition, which is usally an error or warning
@@ -388,6 +380,13 @@ message ApplicationSetTerminalGenerator {
 
   // Selector allows to post-filter all generator.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 8;
+}
+
+// ApplicationSetTree holds nodes which belongs to the application
+// TODO: describe purpose of this type
+message ApplicationSetTree {
+  // Nodes contains list of nodes which are directly managed by the applicationset
+  repeated ResourceNode nodes = 1;
 }
 
 // ApplicationSource contains all required information about the source of an application
@@ -1309,6 +1308,20 @@ message PluginInput {
   // Parameters contains the information to pass to the plugin. It is a map. The keys must be strings, and the
   // values can be any type.
   map<string, k8s.io.apiextensions_apiserver.pkg.apis.apiextensions.v1.JSON> parameters = 1;
+}
+
+message ProgressiveSyncStatus {
+  // LastTransitionTime is the time the status was last updated
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 2;
+
+  // Message contains human-readable message indicating details about the status
+  optional string message = 3;
+
+  // Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
+  optional string status = 4;
+
+  // Step tracks which step this Application should be updated in
+  optional string step = 5;
 }
 
 // ProjectRole represents a role that has access to a project
