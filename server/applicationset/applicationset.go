@@ -320,7 +320,7 @@ func (s *Server) buildApplicationSetTree(ctx context.Context, a *v1alpha1.Applic
 				Version:   gvk.Version,
 				Kind:      v1alpha1.ApplicationSchemaGroupVersionKind.Kind,
 				Namespace: a.Namespace,
-				UID:       app.UID,
+				UID:       string(app.UID),
 			},
 			ParentRefs: parentRefs,
 			CreatedAt:  app.CreatedAt,
