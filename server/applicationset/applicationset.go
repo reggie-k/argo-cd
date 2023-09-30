@@ -281,7 +281,7 @@ func (s *Server) Delete(ctx context.Context, q *applicationset.ApplicationSetDel
 
 }
 
-func (s *Server) ResourceTree(ctx context.Context, q *applicationset.ApplicationSetGetQuery) (*v1alpha1.ApplicationSetTree, error) {
+func (s *Server) ResourceTree(ctx context.Context, q *applicationset.ApplicationSetTreeQuery) (*v1alpha1.ApplicationSetTree, error) {
 	namespace := s.appsetNamespaceOrDefault(q.AppsetNamespace)
 
 	if !s.isNamespaceEnabled(namespace) {
