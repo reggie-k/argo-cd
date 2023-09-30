@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/argoproj/gitops-engine/pkg/utils/kube"
 	"github.com/argoproj/pkg/sync"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -17,10 +18,8 @@ import (
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"github.com/argoproj/gitops-engine/pkg/utils/kube"
 
 	appsetutils "github.com/argoproj/argo-cd/v2/applicationset/utils"
 	"github.com/argoproj/argo-cd/v2/pkg/apiclient/applicationset"
@@ -298,36 +297,35 @@ func (s *Server) ResourceTree(ctx context.Context, q *applicationset.Application
 		return nil, err
 	}
 
-
 	return s.buildApplicationSetTree(ctx, a)
 }
 
 func (s *Server) buildApplicationSetTree(ctx context.Context, a *v1alpha1.ApplicationSet) (*v1alpha1.ApplicationSetTree, error) {
 	var tree v1alpha1.ApplicationSetTree
 
-  s.appclientset.ArgoprojV1alpha1()
-  gvk := v1alpha1.ApplicationSetSchemaGroupVersionKind
-  ownerKey := kube.NewResourceKey(gvk.Group, a.Kind, a.Namespace, a.Name)
+	s.appclientset.ArgoprojV1alpha1()
+	gvk := v1alpha1.ApplicationSetSchemaGroupVersionKind
+	ownerKey := kube.NewResourceKey(gvk.Group, a.Kind, a.Namespace, a.Name)
 	parentRefs := []v1alpha1.ResourceRef{
-    {Name: a.Name, Kind: a.Kind, Namespace: a.Namespace, Group: ownerKey.Group, Version: gvk.Version, UID: string(a.UID)},
-  }
+		{Name: a.Name, Kind: a.Kind, Namespace: a.Namespace, Group: ownerKey.Group, Version: gvk.Version, UID: string(a.UID)},
+	}
 
-  apps := a.Status.ApplicationStatus
-  for _, app := range apps {
-    tree.Nodes = append(tree.Nodes, v1alpha1.ResourceNode{
-      Health: &app.Health,
-      ResourceRef: v1alpha1.ResourceRef{
-        Name: app.Application,
-        Group: gvk.Group,
-        Version: gvk.Version,
-        Kind: v1alpha1.ApplicationSchemaGroupVersionKind.Kind,
-        Namespace: a.Namespace,
-        UID: app.UID,
-      },
-      ParentRefs: parentRefs,
-      CreatedAt: app.CreatedAt,
-    })
-  }
+	apps := a.Status.ApplicationStatus
+	for _, app := range apps {
+		tree.Nodes = append(tree.Nodes, v1alpha1.ResourceNode{
+			Health: &app.Health,
+			ResourceRef: v1alpha1.ResourceRef{
+				Name:      app.Application,
+				Group:     gvk.Group,
+				Version:   gvk.Version,
+				Kind:      v1alpha1.ApplicationSchemaGroupVersionKind.Kind,
+				Namespace: a.Namespace,
+				UID:       app.UID,
+			},
+			ParentRefs: parentRefs,
+			CreatedAt:  app.CreatedAt,
+		})
+	}
 
 	return &tree, nil
 }

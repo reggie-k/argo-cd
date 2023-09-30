@@ -822,9 +822,9 @@ const (
 // ApplicationSetApplicationStatus contains details about each Application managed by the ApplicationSet
 type ApplicationSetApplicationStatus struct {
 	// Application contains the name of the Application resource
-	Application string `json:"application" protobuf:"bytes,1,opt,name=application"`
-  UID string `json:"uid" protobuf:"bytes,2,opt,name=uid"`
-  CreatedAt *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,3,opt,name=createdAt"`
+	Application string       `json:"application" protobuf:"bytes,1,opt,name=application"`
+	UID         string       `json:"uid" protobuf:"bytes,2,opt,name=uid"`
+	CreatedAt   *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,3,opt,name=createdAt"`
 
 	ProgressiveSync *ProgressiveSyncStatus `json:"progressiveSyncStatus,omitempty" protobuf:"bytes,4,opt,name=progressiveSyncStatus"`
 	Health          HealthStatus           `json:"health,omitempty" protobuf:"bytes,5,opt,name=health"`

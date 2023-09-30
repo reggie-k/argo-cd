@@ -116,7 +116,7 @@ func (c *Cache) SetAppSetApplicationsTree(appSetName string, applicationsTree *a
 		return err
 	}
 
-	return nil 
+	return nil
 }
 
 func (c *Cache) SetClusterInfo(server string, info *appv1.ClusterInfo) error {
