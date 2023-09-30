@@ -26,6 +26,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -823,7 +824,7 @@ const (
 type ApplicationSetApplicationStatus struct {
 	// Application contains the name of the Application resource
 	Application string       `json:"application" protobuf:"bytes,1,opt,name=application"`
-	UID         string       `json:"uid" protobuf:"bytes,2,opt,name=uid"`
+	UID         types.UID       `json:"uid" protobuf:"bytes,2,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
 	CreatedAt   *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,3,opt,name=createdAt"`
 
 	ProgressiveSync *ProgressiveSyncStatus `json:"progressiveSyncStatus,omitempty" protobuf:"bytes,4,opt,name=progressiveSyncStatus"`

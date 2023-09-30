@@ -167,6 +167,8 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// appMap is a name->app collection of Applications in this ApplicationSet.
 	appMap := map[string]argov1alpha1.Application{}
+  // statusMap is an appName->status collection of the Applications in this ApplicationSet.
+  statusMap := map[string]argov1alpha1.ApplicationSetApplicationStatus{}
 	// appSyncMap tracks which apps will be synced during this reconciliation.
 	appSyncMap := map[string]bool{}
 
@@ -175,34 +177,23 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, fmt.Errorf("failed to get current applications for application set: %w", err)
 	}
 
-	statuses := make([]argov1alpha1.ApplicationSetApplicationStatus, 0)
 	for _, app := range currentApplications {
-		appMap[app.Name] = app
-
-		status := argov1alpha1.ApplicationSetApplicationStatus{
-			Application: app.Name,
-			Health:      app.Status.Health,
-		}
-		statuses = append(statuses, status)
+		appMap[app.Name] = app 
+    statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
+        Application: app.Name,
+        UID: app.UID,
+        CreatedAt: &app.CreationTimestamp,
+        Health:      app.Status.Health,
+      }
 	}
-	r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statuses)
 
 	if r.EnableProgressiveSyncs {
-		if applicationSetInfo.Spec.Strategy == nil && len(applicationSetInfo.Status.ApplicationStatus) > 0 {
-			// If appset used progressive sync but stopped, clean up the progressive sync application statuses
-			logCtx.Infof("Removing %v unnecessary AppStatus entries from ApplicationSet %v", len(applicationSetInfo.Status.ApplicationStatus), applicationSetInfo.Name)
-
-			err := r.setAppSetApplicationStatus(ctx, logCtx, &applicationSetInfo, []argov1alpha1.ApplicationSetApplicationStatus{})
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to clear previous AppSet application statuses for %v: %w", applicationSetInfo.Name, err)
-			}
-		} else {
-			appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap)
-			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
-			}
-		}
+    appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
+    if err != nil {
+      return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
+    }
 	}
+	r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statusMap)
 
 	var validApps []argov1alpha1.Application
 	for i := range desiredApplications {
@@ -894,7 +885,7 @@ func (r *ApplicationSetReconciler) removeFinalizerOnInvalidDestination(ctx conte
 }
 
 func (r *ApplicationSetReconciler) removeOwnerReferencesOnDeleteAppSet(ctx context.Context, applicationSet argov1alpha1.ApplicationSet) error {
-	applications, err := r.getCurrentApplications(ctx, applicationSet)
+	applications, err := r.getCurrentApplications(ctx, application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatusSet)
 	if err != nil {
 		return err
 	}
@@ -917,7 +908,7 @@ func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, 
 		return nil, fmt.Errorf("failed to build app dependency list: %w", err)
 	}
 
-	_, err = r.updateApplicationSetApplicationStatus(ctx, logCtx, &appset, applications, appStepMap)
+	_, err = r.updateApplicationSetApplicationStatus(ctx, logCtx, &appset, applications, appStepMap, statusMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update applicationset app status: %w", err)
 	}
@@ -934,7 +925,7 @@ func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, 
 
 	logCtx.Infof("Application allowed to sync before maxUpdate?: %+v", appSyncMap)
 
-	_, err = r.updateApplicationSetApplicationStatusProgress(ctx, logCtx, &appset, appSyncMap, appStepMap, appMap)
+	_, err = r.updateApplicationSetApplicationStatusProgress(ctx, logCtx, &appset, appSyncMap, appStepMap, appMap, statusMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update applicationset application status progress: %w", err)
 	}
@@ -1107,22 +1098,18 @@ func statusStrings(app argov1alpha1.Application) (string, string, string) {
 }
 
 // check the status of each Application's status and promote Applications to the next status if needed
-func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, appStepMap map[string]int) ([]argov1alpha1.ApplicationSetApplicationStatus, error) {
-
+func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, appStepMap map[string]int, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.ApplicationSetApplicationStatus, error) {
 	now := metav1.Now()
-	appStatuses := make([]argov1alpha1.ApplicationSetApplicationStatus, 0, len(applications))
 
-	for _, app := range applications {
+  for _, app := range applications {
 
 		healthStatusString, syncStatusString, operationPhaseString := statusStrings(app)
 
-		idx := findApplicationStatusIndex(applicationSet.Status.ApplicationStatus, app.Name)
-
 		currentAppStatus := argov1alpha1.ApplicationSetApplicationStatus{}
-
-		if idx == -1 {
+	  status, ok := statusMap[app.Name]
+    if !ok {
 			// AppStatus not found, set default status of "Waiting"
-			currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
+      currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
 				Application: app.Name,
 				ProgressiveSync: &argov1alpha1.ProgressiveSyncStatus{
 					LastTransitionTime: &now,
@@ -1131,10 +1118,10 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 					Step:               fmt.Sprint(appStepMap[app.Name] + 1),
 				},
 			}
-		} else {
-			// we have an existing AppStatus
-			currentAppStatus = applicationSet.Status.ApplicationStatus[idx]
-		}
+    } else {
+      // we have an existing AppStatus
+			currentAppStatus = status 
+    }
 
 		appOutdated := false
 		if progressiveSyncsStrategyEnabled(applicationSet, "RollingSync") {
@@ -1186,22 +1173,15 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 			currentAppStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 		}
 
-		appStatuses = append(appStatuses, currentAppStatus)
+    statusMap[app.Name] = currentAppStatus
 	}
 
-	err := r.setAppSetApplicationStatus(ctx, logCtx, applicationSet, appStatuses)
-	if err != nil {
-		return nil, fmt.Errorf("failed to set AppSet application statuses: %w", err)
-	}
-
-	return appStatuses, nil
+	return statusMap, nil
 }
 
 // check Applications that are in Waiting status and promote them to Pending if needed
-func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, appSyncMap map[string]bool, appStepMap map[string]int, appMap map[string]argov1alpha1.Application) ([]argov1alpha1.ApplicationSetApplicationStatus, error) {
+func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, appSyncMap map[string]bool, appStepMap map[string]int, appMap map[string]argov1alpha1.Application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.ApplicationSetApplicationStatus, error) {
 	now := metav1.Now()
-
-	appStatuses := make([]argov1alpha1.ApplicationSetApplicationStatus, 0, len(applicationSet.Status.ApplicationStatus))
 
 	// if we have no RollingUpdate steps, clear out the existing ApplicationStatus entries
 	if applicationSet.Spec.Strategy != nil && applicationSet.Spec.Strategy.Type != "" && applicationSet.Spec.Strategy.Type != "AllAtOnce" {
@@ -1265,16 +1245,11 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 				updateCountMap[appStepMap[appStatus.Application]] += 1
 			}
 
-			appStatuses = append(appStatuses, appStatus)
+		  statusMap[appStatus.Application] = appStatus	
 		}
 	}
 
-	err := r.setAppSetApplicationStatus(ctx, logCtx, applicationSet, appStatuses)
-	if err != nil {
-		return nil, fmt.Errorf("failed to set AppSet app status: %w", err)
-	}
-
-	return appStatuses, nil
+	return statusMap, nil
 }
 
 func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusConditions(ctx context.Context, applicationSet *argov1alpha1.ApplicationSet) ([]argov1alpha1.ApplicationSetCondition, error) {
@@ -1331,22 +1306,21 @@ func findApplicationStatusIndex(appStatuses []argov1alpha1.ApplicationSetApplica
 
 // setApplicationSetApplicationStatus updates the ApplicatonSet's status field
 // with any new/changed Application statuses.
-func (r *ApplicationSetReconciler) setAppSetApplicationStatus(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, applicationStatuses []argov1alpha1.ApplicationSetApplicationStatus) error {
+func (r *ApplicationSetReconciler) setAppSetApplicationStatus(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, applicationStatuses map[string]argov1alpha1.ApplicationSetApplicationStatus) error {
 	needToUpdateStatus := false
 
 	if len(applicationStatuses) != len(applicationSet.Status.ApplicationStatus) {
 		needToUpdateStatus = true
 	} else {
-		for i := range applicationStatuses {
-			appStatus := applicationStatuses[i]
-			idx := findApplicationStatusIndex(applicationSet.Status.ApplicationStatus, appStatus.Application)
+		for name, status := range applicationStatuses {
+			idx := findApplicationStatusIndex(applicationSet.Status.ApplicationStatus, name)
 			if idx == -1 {
 				needToUpdateStatus = true
 				break
 			}
 			currentStatus := applicationSet.Status.ApplicationStatus[idx]
-			if currentStatus.Health != appStatus.Health || currentStatus.ProgressiveSync != appStatus.ProgressiveSync ||
-				(appStatus.ProgressiveSync != nil && (currentStatus.ProgressiveSync.Message != appStatus.ProgressiveSync.Message || currentStatus.ProgressiveSync.Status != appStatus.ProgressiveSync.Status || currentStatus.ProgressiveSync.Step != appStatus.ProgressiveSync.Step)) {
+			if currentStatus.Health != status.Health || currentStatus.ProgressiveSync != status.ProgressiveSync ||
+				(status.ProgressiveSync != nil && (currentStatus.ProgressiveSync.Message != status.ProgressiveSync.Message || currentStatus.ProgressiveSync.Status != status.ProgressiveSync.Status || currentStatus.ProgressiveSync.Step != status.ProgressiveSync.Step)) {
 				needToUpdateStatus = true
 				break
 			}
@@ -1358,8 +1332,8 @@ func (r *ApplicationSetReconciler) setAppSetApplicationStatus(ctx context.Contex
 
 		// rebuild ApplicationStatus from scratch, we don't need any previous status history
 		applicationSet.Status.ApplicationStatus = []argov1alpha1.ApplicationSetApplicationStatus{}
-		for i := range applicationStatuses {
-			applicationSet.Status.SetApplicationStatus(applicationStatuses[i])
+		for _, status := range applicationStatuses {
+			applicationSet.Status.SetApplicationStatus(status)
 		}
 
 		// Update the newly fetched object with new set of ApplicationStatus
