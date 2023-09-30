@@ -1537,7 +1537,7 @@ func schema_pkg_apis_application_v1alpha1_ApplicationSetTree(ref common.Referenc
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Description: "ApplicationSetTree holds nodes which belongs to the application",
+				Description: "ApplicationSetTree holds nodes which belongs to the application Used to build a tree of an ApplicationSet and its children",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"nodes": {

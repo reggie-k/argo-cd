@@ -270,7 +270,7 @@ var (
 )
 
 func request_ApplicationSetService_ResourceTree_0(ctx context.Context, marshaler runtime.Marshaler, client ApplicationSetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ApplicationSetGetQuery
+	var protoReq ApplicationSetTreeQuery
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -304,7 +304,7 @@ func request_ApplicationSetService_ResourceTree_0(ctx context.Context, marshaler
 }
 
 func local_request_ApplicationSetService_ResourceTree_0(ctx context.Context, marshaler runtime.Marshaler, server ApplicationSetServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ApplicationSetGetQuery
+	var protoReq ApplicationSetTreeQuery
 	var metadata runtime.ServerMetadata
 
 	var (

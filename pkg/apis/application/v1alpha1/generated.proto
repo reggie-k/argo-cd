@@ -387,7 +387,7 @@ message ApplicationSetTerminalGenerator {
 }
 
 // ApplicationSetTree holds nodes which belongs to the application
-// TODO: describe purpose of this type
+// Used to build a tree of an ApplicationSet and its children
 message ApplicationSetTree {
   // Nodes contains list of nodes which are directly managed by the applicationset
   repeated ResourceNode nodes = 1;

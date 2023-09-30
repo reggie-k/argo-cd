@@ -2021,7 +2021,6 @@
         "parameters": [
           {
             "type": "string",
-            "description": "the applicationsets's name",
             "name": "name",
             "in": "path",
             "required": true
@@ -6270,7 +6269,7 @@
     },
     "v1alpha1ApplicationSetTree": {
       "type": "object",
-      "title": "ApplicationSetTree holds nodes which belongs to the application\nTODO: describe purpose of this type",
+      "title": "ApplicationSetTree holds nodes which belongs to the application\nUsed to build a tree of an ApplicationSet and its children",
       "properties": {
         "nodes": {
           "type": "array",
