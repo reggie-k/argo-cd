@@ -326,7 +326,7 @@ func (s *Server) buildApplicationSetTree(ctx context.Context, a *v1alpha1.Applic
 			CreatedAt:  app.CreatedAt,
 		})
 	}
-  tree.Normalize()
+	tree.Normalize()
 
 	return &tree, nil
 }

@@ -167,8 +167,8 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// appMap is a name->app collection of Applications in this ApplicationSet.
 	appMap := map[string]argov1alpha1.Application{}
-  // statusMap is an appName->status collection of the Applications in this ApplicationSet.
-  statusMap := map[string]argov1alpha1.ApplicationSetApplicationStatus{}
+	// statusMap is an appName->status collection of the Applications in this ApplicationSet.
+	statusMap := map[string]argov1alpha1.ApplicationSetApplicationStatus{}
 	// appSyncMap tracks which apps will be synced during this reconciliation.
 	appSyncMap := map[string]bool{}
 
@@ -178,20 +178,20 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	for _, app := range currentApplications {
-		appMap[app.Name] = app 
-    statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
-        Application: app.Name,
-        UID: app.UID,
-        CreatedAt: &app.CreationTimestamp,
-        Health:      app.Status.Health,
-      }
+		appMap[app.Name] = app
+		statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
+			Application: app.Name,
+			UID:         app.UID,
+			CreatedAt:   &app.CreationTimestamp,
+			Health:      app.Status.Health,
+		}
 	}
 
 	if r.EnableProgressiveSyncs {
-    appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
-    if err != nil {
-      return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
-    }
+		appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
+		}
 	}
 	r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statusMap)
 
@@ -1101,15 +1101,15 @@ func statusStrings(app argov1alpha1.Application) (string, string, string) {
 func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, appStepMap map[string]int, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.ApplicationSetApplicationStatus, error) {
 	now := metav1.Now()
 
-  for _, app := range applications {
+	for _, app := range applications {
 
 		healthStatusString, syncStatusString, operationPhaseString := statusStrings(app)
 
 		currentAppStatus := argov1alpha1.ApplicationSetApplicationStatus{}
-	  status, ok := statusMap[app.Name]
-    if !ok {
+		status, ok := statusMap[app.Name]
+		if !ok {
 			// AppStatus not found, set default status of "Waiting"
-      currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
+			currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
 				Application: app.Name,
 				ProgressiveSync: &argov1alpha1.ProgressiveSyncStatus{
 					LastTransitionTime: &now,
@@ -1118,10 +1118,10 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 					Step:               fmt.Sprint(appStepMap[app.Name] + 1),
 				},
 			}
-    } else {
-      // we have an existing AppStatus
-			currentAppStatus = status 
-    }
+		} else {
+			// we have an existing AppStatus
+			currentAppStatus = status
+		}
 
 		appOutdated := false
 		if progressiveSyncsStrategyEnabled(applicationSet, "RollingSync") {
@@ -1173,7 +1173,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 			currentAppStatus.ProgressiveSync.Step = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 		}
 
-    statusMap[app.Name] = currentAppStatus
+		statusMap[app.Name] = currentAppStatus
 	}
 
 	return statusMap, nil
@@ -1245,7 +1245,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 				updateCountMap[appStepMap[appStatus.Application]] += 1
 			}
 
-		  statusMap[appStatus.Application] = appStatus	
+			statusMap[appStatus.Application] = appStatus
 		}
 	}
 
