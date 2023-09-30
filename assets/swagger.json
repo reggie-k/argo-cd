@@ -5963,11 +5963,17 @@
           "type": "string",
           "title": "Application contains the name of the Application resource"
         },
+        "createdAt": {
+          "$ref": "#/definitions/v1Time"
+        },
         "health": {
           "$ref": "#/definitions/v1alpha1HealthStatus"
         },
         "progressiveSyncStatus": {
           "$ref": "#/definitions/v1alpha1ProgressiveSyncStatus"
+        },
+        "uid": {
+          "type": "string"
         }
       }
     },

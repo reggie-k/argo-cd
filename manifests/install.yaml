@@ -20134,6 +20134,9 @@ spec:
                   properties:
                     application:
                       type: string
+                    createdAt:
+                      format: date-time
+                      type: string
                     health:
                       properties:
                         message:
@@ -20157,8 +20160,11 @@ spec:
                       - status
                       - step
                       type: object
+                    uid:
+                      type: string
                   required:
                   - application
+                  - uid
                   type: object
                 type: array
               conditions:

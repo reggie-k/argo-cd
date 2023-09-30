@@ -182,9 +182,13 @@ message ApplicationSetApplicationStatus {
   // Application contains the name of the Application resource
   optional string application = 1;
 
-  optional ProgressiveSyncStatus progressiveSyncStatus = 2;
+  optional string uid = 2;
 
-  optional HealthStatus health = 3;
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time createdAt = 3;
+
+  optional ProgressiveSyncStatus progressiveSyncStatus = 4;
+
+  optional HealthStatus health = 5;
 }
 
 // ApplicationSetCondition contains details about an applicationset condition, which is usally an error or warning

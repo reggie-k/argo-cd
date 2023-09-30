@@ -817,6 +817,18 @@ func schema_pkg_apis_application_v1alpha1_ApplicationSetApplicationStatus(ref co
 							Format:      "",
 						},
 					},
+					"uid": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"createdAt": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
 					"progressiveSyncStatus": {
 						SchemaProps: spec.SchemaProps{
 							Ref: ref("github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.ProgressiveSyncStatus"),
@@ -829,11 +841,11 @@ func schema_pkg_apis_application_v1alpha1_ApplicationSetApplicationStatus(ref co
 						},
 					},
 				},
-				Required: []string{"application"},
+				Required: []string{"application", "uid"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.HealthStatus", "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.ProgressiveSyncStatus"},
+			"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.HealthStatus", "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.ProgressiveSyncStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
