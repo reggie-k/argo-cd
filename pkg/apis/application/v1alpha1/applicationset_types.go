@@ -824,7 +824,7 @@ const (
 type ApplicationSetApplicationStatus struct {
 	// Application contains the name of the Application resource
 	Application string       `json:"application" protobuf:"bytes,1,opt,name=application"`
-	UID         types.UID       `json:"uid" protobuf:"bytes,2,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
+	UID         types.UID    `json:"uid" protobuf:"bytes,2,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
 	CreatedAt   *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,3,opt,name=createdAt"`
 
 	ProgressiveSync *ProgressiveSyncStatus `json:"progressiveSyncStatus,omitempty" protobuf:"bytes,4,opt,name=progressiveSyncStatus"`
