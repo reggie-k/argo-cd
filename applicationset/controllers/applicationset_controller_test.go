@@ -3100,7 +3100,7 @@ func TestSetApplicationSetApplicationStatus(t *testing.T) {
 	for _, cc := range []struct {
 		name                string
 		appSet              v1alpha1.ApplicationSet
-		appStatuses         []v1alpha1.ApplicationSetApplicationStatus
+		appStatuses         map[string]v1alpha1.ApplicationSetApplicationStatus
 		expectedAppStatuses []v1alpha1.ApplicationSetApplicationStatus
 	}{
 		{
@@ -3121,18 +3121,22 @@ func TestSetApplicationSetApplicationStatus(t *testing.T) {
 					Template: v1alpha1.ApplicationSetTemplate{},
 				},
 			},
-			appStatuses: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			appStatuses: map[string]v1alpha1.ApplicationSetApplicationStatus{
+        "app1": {
 					Application: "app1",
-					Message:     "testing SetApplicationSetApplicationStatus to Healthy",
-					Status:      "Healthy",
+          ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+            Message:     "testing SetApplicationSetApplicationStatus to Healthy",
+            Status:      "Healthy",
+          },
 				},
 			},
 			expectedAppStatuses: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+        {
 					Application: "app1",
-					Message:     "testing SetApplicationSetApplicationStatus to Healthy",
-					Status:      "Healthy",
+          ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+            Message:     "testing SetApplicationSetApplicationStatus to Healthy",
+            Status:      "Healthy",
+          },
 				},
 			},
 		},
@@ -3157,13 +3161,15 @@ func TestSetApplicationSetApplicationStatus(t *testing.T) {
 					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
 						{
 							Application: "app1",
-							Message:     "testing SetApplicationSetApplicationStatus to Healthy",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Message:     "testing SetApplicationSetApplicationStatus to Healthy",
+                Status:      "Healthy",
+              },
 						},
 					},
 				},
 			},
-			appStatuses:         []v1alpha1.ApplicationSetApplicationStatus{},
+			appStatuses:         map[string]v1alpha1.ApplicationSetApplicationStatus{},
 			expectedAppStatuses: nil,
 		},
 	} {
@@ -4055,11 +4061,15 @@ func TestBuildAppSyncMap(t *testing.T) {
 					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
 						{
 							Application: "app1",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 						{
 							Application: "app2",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 					},
 				},
@@ -4124,11 +4134,15 @@ func TestBuildAppSyncMap(t *testing.T) {
 					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
 						{
 							Application: "app1",
-							Status:      "Pending",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Pending",
+              },
 						},
 						{
 							Application: "app2",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 					},
 				},
@@ -4193,11 +4207,15 @@ func TestBuildAppSyncMap(t *testing.T) {
 					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
 						{
 							Application: "app1",
-							Status:      "Progressing",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Progressing",
+              },
 						},
 						{
 							Application: "app2",
-							Status:      "Progressing",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Progressing",
+              },
 						},
 					},
 				},
@@ -4262,11 +4280,15 @@ func TestBuildAppSyncMap(t *testing.T) {
 					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
 						{
 							Application: "app1",
-							Status:      "Progressing",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Progressing",
+              },
 						},
 						{
 							Application: "app2",
-							Status:      "Progressing",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Progressing",
+              },
 						},
 					},
 				},
@@ -4331,11 +4353,15 @@ func TestBuildAppSyncMap(t *testing.T) {
 					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
 						{
 							Application: "app1",
-							Status:      "Healthy",
-						},
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
+            },
 						{
 							Application: "app2",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 					},
 				},
@@ -4400,27 +4426,39 @@ func TestBuildAppSyncMap(t *testing.T) {
 					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
 						{
 							Application: "app1",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 						{
 							Application: "app2",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 						{
 							Application: "app3",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 						{
 							Application: "app4",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 						{
 							Application: "app5",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 						{
 							Application: "app7",
-							Status:      "Healthy",
+              ProgressiveSync: &v1alpha1.ProgressiveSyncStatus{
+                Status:      "Healthy",
+              },
 						},
 					},
 				},
