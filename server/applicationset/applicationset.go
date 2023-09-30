@@ -331,10 +331,6 @@ func (s *Server) buildApplicationSetTree(ctx context.Context, a *v1alpha1.Applic
 	return &tree, nil
 }
 
-func (s *Server) getCachedAppSetAppliations(ctx context.Context, a *v1alpha1.ApplicationSet, getFromCache func() error) error {
-	return nil
-}
-
 func (s *Server) validateAppSet(ctx context.Context, appset *v1alpha1.ApplicationSet) (string, error) {
 	if appset == nil {
 		return "", fmt.Errorf("ApplicationSet cannot be validated for nil value")

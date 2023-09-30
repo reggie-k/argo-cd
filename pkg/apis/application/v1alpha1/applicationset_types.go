@@ -852,7 +852,7 @@ type ApplicationSetList struct {
 }
 
 // ApplicationSetTree holds nodes which belongs to the application
-// TODO: describe purpose of this type
+// Used to build a tree of an ApplicationSet and its children
 type ApplicationSetTree struct {
 	// Nodes contains list of nodes which are directly managed by the applicationset
 	Nodes []ResourceNode `json:"nodes,omitempty" protobuf:"bytes,1,rep,name=nodes"`
@@ -864,16 +864,6 @@ func (t *ApplicationSetTree) Normalize() {
 	sort.Slice(t.Nodes, func(i, j int) bool {
 		return t.Nodes[i].FullName() < t.Nodes[j].FullName()
 	})
-}
-
-// TODO: Document purpose of this method
-func (t *ApplicationSetTree) FindNode(group string, kind string, namespace string, name string) *ResourceNode {
-	for _, n := range t.Nodes {
-		if n.Group == group && n.Kind == kind && n.Namespace == namespace && n.Name == name {
-			return &n
-		}
-	}
-	return nil
 }
 
 // func init() {
