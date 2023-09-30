@@ -474,3 +474,50 @@ func TestUpdateAppSet(t *testing.T) {
 	})
 
 }
+
+func TestResourceTree(t *testing.T) {
+	appSet1 := newTestAppSet(func(appset *appsv1.ApplicationSet) {
+		appset.Name = "AppSet1"
+	})
+
+	appSet2 := newTestAppSet(func(appset *appsv1.ApplicationSet) {
+		appset.Name = "AppSet2"
+	})
+
+	appSet3 := newTestAppSet(func(appset *appsv1.ApplicationSet) {
+		appset.Name = "AppSet3"
+	})
+
+	t.Run("ResourceTree in default namespace", func(t *testing.T) {
+
+		appSetServer := newTestAppSetServer(appSet1, appSet2, appSet3)
+
+		appsetQuery := applicationset.ApplicationSetGetQuery{Name: "AppSet1"}
+
+		res, err := appSetServer.Get(context.Background(), &appsetQuery)
+		assert.NoError(t, err)
+		assert.Equal(t, "AppSet1", res.Name)
+	})
+
+	t.Run("ResourceTree in named namespace", func(t *testing.T) {
+
+		appSetServer := newTestAppSetServer(appSet1, appSet2, appSet3)
+
+		appsetQuery := applicationset.ApplicationSetGetQuery{Name: "AppSet1", AppsetNamespace: testNamespace}
+
+		res, err := appSetServer.Get(context.Background(), &appsetQuery)
+		assert.NoError(t, err)
+		assert.Equal(t, "AppSet1", res.Name)
+	})
+
+	t.Run("ResourceTree in not allowed namespace", func(t *testing.T) {
+
+		appSetServer := newTestAppSetServer(appSet1, appSet2, appSet3)
+
+		appsetQuery := applicationset.ApplicationSetGetQuery{Name: "AppSet1", AppsetNamespace: "NOT-ALLOWED"}
+
+		_, err := appSetServer.Get(context.Background(), &appsetQuery)
+		assert.Equal(t, "namespace 'NOT-ALLOWED' is not permitted", err.Error())
+	})
+}
+

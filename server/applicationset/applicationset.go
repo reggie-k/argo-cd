@@ -303,7 +303,6 @@ func (s *Server) ResourceTree(ctx context.Context, q *applicationset.Application
 func (s *Server) buildApplicationSetTree(ctx context.Context, a *v1alpha1.ApplicationSet) (*v1alpha1.ApplicationSetTree, error) {
 	var tree v1alpha1.ApplicationSetTree
 
-	s.appclientset.ArgoprojV1alpha1()
 	gvk := v1alpha1.ApplicationSetSchemaGroupVersionKind
 	ownerKey := kube.NewResourceKey(gvk.Group, a.Kind, a.Namespace, a.Name)
 	parentRefs := []v1alpha1.ResourceRef{
