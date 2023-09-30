@@ -1319,7 +1319,7 @@ func (r *ApplicationSetReconciler) setAppSetApplicationStatus(ctx context.Contex
 				break
 			}
 			currentStatus := applicationSet.Status.ApplicationStatus[idx]
-			if currentStatus.Health != status.Health || currentStatus.ProgressiveSync != status.ProgressiveSync ||
+			if currentStatus.Health != status.Health || currentStatus.UID != status.UID || currentStatus.ProgressiveSync != status.ProgressiveSync ||
 				(status.ProgressiveSync != nil && (currentStatus.ProgressiveSync.Message != status.ProgressiveSync.Message || currentStatus.ProgressiveSync.Status != status.ProgressiveSync.Status || currentStatus.ProgressiveSync.Step != status.ProgressiveSync.Step)) {
 				needToUpdateStatus = true
 				break
