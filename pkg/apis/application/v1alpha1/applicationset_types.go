@@ -823,23 +823,23 @@ const (
 // ApplicationSetApplicationStatus contains details about each Application managed by the ApplicationSet
 type ApplicationSetApplicationStatus struct {
 	// Application contains the name of the Application resource
-	Application string       `json:"application" protobuf:"bytes,1,opt,name=application"`
+	Application string `json:"application" protobuf:"bytes,1,opt,name=application"`
 	// ProgressiveSyncLastTransitionTime is the time the status was last updated
 	ProgressiveSyncLastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,2,opt,name=lastTransitionTime"`
 	// ProgressiveSyncMessage contains human-readable message indicating details about the status of the progressive sync
 	ProgressiveSyncMessage string `json:"message" protobuf:"bytes,3,opt,name=message"`
 	// ProgressiveSyncStatus contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
-  // this is NOT the same as the Application's status
+	// this is NOT the same as the Application's status
 	ProgressiveSyncStatus string `json:"status" protobuf:"bytes,4,opt,name=status"`
 	// ProgressiveSyncStep tracks which step the Applications should be updated in
 	ProgressiveSyncStep string `json:"step" protobuf:"bytes,5,opt,name=step"`
 
-  // UID contains the UID of the application resource
-	UID         types.UID    `json:"uid" protobuf:"bytes,6,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
-  // CreatedAt contains the time the application was created
-	CreatedAt   *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,7,opt,name=createdAt"`
-  // Health contains the health status of the application
-	Health          HealthStatus           `json:"health,omitempty" protobuf:"bytes,8,opt,name=health"`
+	// UID contains the UID of the application resource
+	UID types.UID `json:"uid" protobuf:"bytes,6,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
+	// CreatedAt contains the time the application was created
+	CreatedAt *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,7,opt,name=createdAt"`
+	// Health contains the health status of the application
+	Health HealthStatus `json:"health,omitempty" protobuf:"bytes,8,opt,name=health"`
 }
 
 // ApplicationSetList contains a list of ApplicationSet

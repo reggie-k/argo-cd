@@ -1110,11 +1110,11 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 		if !ok {
 			// AppStatus not found, set default status of "Waiting"
 			currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
-				Application: app.Name,
-        ProgressiveSyncLastTransitionTime: &now,
-        ProgressiveSyncMessage:            "No Application status found, defaulting status to Waiting.",
-        ProgressiveSyncStatus:             "Waiting",
-        ProgressiveSyncStep:               fmt.Sprint(appStepMap[app.Name] + 1),
+				Application:                       app.Name,
+				ProgressiveSyncLastTransitionTime: &now,
+				ProgressiveSyncMessage:            "No Application status found, defaulting status to Waiting.",
+				ProgressiveSyncStatus:             "Waiting",
+				ProgressiveSyncStep:               fmt.Sprint(appStepMap[app.Name] + 1),
 			}
 		} else {
 			// we have an existing AppStatus

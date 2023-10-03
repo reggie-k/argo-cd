@@ -476,47 +476,47 @@ func TestUpdateAppSet(t *testing.T) {
 }
 
 func TestResourceTree(t *testing.T) {
-  now := metav1.Now()
+	now := metav1.Now()
 	appSet1 := newTestAppSet(func(appset *appsv1.ApplicationSet) {
 		appset.Name = "AppSet1"
-    appset.Status.ApplicationStatus = []appsv1.ApplicationSetApplicationStatus{
-      {
-        Application: "app1",
-        UID: "app1-uid",
-        CreatedAt: &now,
-        Health: appsv1.HealthStatus{
-          Status: "Healthy", 
-        },
-      },
-    }
+		appset.Status.ApplicationStatus = []appsv1.ApplicationSetApplicationStatus{
+			{
+				Application: "app1",
+				UID:         "app1-uid",
+				CreatedAt:   &now,
+				Health: appsv1.HealthStatus{
+					Status: "Healthy",
+				},
+			},
+		}
 	})
 
 	appSet2 := newTestAppSet(func(appset *appsv1.ApplicationSet) {
 		appset.Name = "AppSet2"
-    appset.Status.ApplicationStatus = []appsv1.ApplicationSetApplicationStatus{
-      {
-        Application: "app2",
-        UID: "app2-uid",
-        CreatedAt: &now,
-        Health: appsv1.HealthStatus{
-          Status: "Healthy", 
-        },
-      },
-    }
+		appset.Status.ApplicationStatus = []appsv1.ApplicationSetApplicationStatus{
+			{
+				Application: "app2",
+				UID:         "app2-uid",
+				CreatedAt:   &now,
+				Health: appsv1.HealthStatus{
+					Status: "Healthy",
+				},
+			},
+		}
 	})
 
 	appSet3 := newTestAppSet(func(appset *appsv1.ApplicationSet) {
 		appset.Name = "AppSet3"
-    appset.Status.ApplicationStatus = []appsv1.ApplicationSetApplicationStatus{
-      {
-        Application: "app3",
-        UID: "app3-uid",
-        CreatedAt: &now,
-        Health: appsv1.HealthStatus{
-          Status: "Healthy", 
-        },
-      },
-    }
+		appset.Status.ApplicationStatus = []appsv1.ApplicationSetApplicationStatus{
+			{
+				Application: "app3",
+				UID:         "app3-uid",
+				CreatedAt:   &now,
+				Health: appsv1.HealthStatus{
+					Status: "Healthy",
+				},
+			},
+		}
 	})
 
 	t.Run("ResourceTree in default namespace", func(t *testing.T) {
@@ -528,32 +528,32 @@ func TestResourceTree(t *testing.T) {
 		res, err := appSetServer.ResourceTree(context.Background(), &appsetQuery)
 		assert.NoError(t, err)
 		assert.Equal(t, appsv1.ApplicationSetTree{
-      Nodes: []appsv1.ResourceNode{
-        {
-          ResourceRef: appsv1.ResourceRef{
-            Version: "v1alpha1",
-            Group: "argoproj.io",
-            Kind: "Application",
-            UID: "app1-uid",
-            Name: "app1",
-            Namespace: "default",
-          },
-          Health: &appsv1.HealthStatus{
-            Status: "Healthy",
-          },
-          CreatedAt: &now,
-          ParentRefs: []appsv1.ResourceRef{
-            {
-              Version: "v1alpha1",
-              Group: "argoproj.io",
-              UID: string(appSet1.UID),
-              Name: appSet1.Name,
-              Namespace: appSet1.Namespace,
-            },
-          },
-        },
-      },
-    }, *res)
+			Nodes: []appsv1.ResourceNode{
+				{
+					ResourceRef: appsv1.ResourceRef{
+						Version:   "v1alpha1",
+						Group:     "argoproj.io",
+						Kind:      "Application",
+						UID:       "app1-uid",
+						Name:      "app1",
+						Namespace: "default",
+					},
+					Health: &appsv1.HealthStatus{
+						Status: "Healthy",
+					},
+					CreatedAt: &now,
+					ParentRefs: []appsv1.ResourceRef{
+						{
+							Version:   "v1alpha1",
+							Group:     "argoproj.io",
+							UID:       string(appSet1.UID),
+							Name:      appSet1.Name,
+							Namespace: appSet1.Namespace,
+						},
+					},
+				},
+			},
+		}, *res)
 	})
 
 	t.Run("ResourceTree in named namespace", func(t *testing.T) {
@@ -565,32 +565,32 @@ func TestResourceTree(t *testing.T) {
 		res, err := appSetServer.ResourceTree(context.Background(), &appsetQuery)
 		assert.NoError(t, err)
 		assert.Equal(t, appsv1.ApplicationSetTree{
-      Nodes: []appsv1.ResourceNode{
-        {
-          ResourceRef: appsv1.ResourceRef{
-            Version: "v1alpha1",
-            Group: "argoproj.io",
-            Kind: "Application",
-            UID: "app1-uid",
-            Name: "app1",
-            Namespace: "default",
-          },
-          Health: &appsv1.HealthStatus{
-            Status: "Healthy",
-          },
-          CreatedAt: &now,
-          ParentRefs: []appsv1.ResourceRef{
-            {
-              Version: "v1alpha1",
-              Group: "argoproj.io",
-              UID: string(appSet1.UID),
-              Name: appSet1.Name,
-              Namespace: appSet1.Namespace,
-            },
-          },
-        },
-      },
-    }, *res)
+			Nodes: []appsv1.ResourceNode{
+				{
+					ResourceRef: appsv1.ResourceRef{
+						Version:   "v1alpha1",
+						Group:     "argoproj.io",
+						Kind:      "Application",
+						UID:       "app1-uid",
+						Name:      "app1",
+						Namespace: "default",
+					},
+					Health: &appsv1.HealthStatus{
+						Status: "Healthy",
+					},
+					CreatedAt: &now,
+					ParentRefs: []appsv1.ResourceRef{
+						{
+							Version:   "v1alpha1",
+							Group:     "argoproj.io",
+							UID:       string(appSet1.UID),
+							Name:      appSet1.Name,
+							Namespace: appSet1.Namespace,
+						},
+					},
+				},
+			},
+		}, *res)
 	})
 
 	t.Run("ResourceTree in not allowed namespace", func(t *testing.T) {
@@ -603,4 +603,3 @@ func TestResourceTree(t *testing.T) {
 		assert.Equal(t, "namespace 'NOT-ALLOWED' is not permitted", err.Error())
 	})
 }
-
