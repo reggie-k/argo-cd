@@ -826,20 +826,18 @@ type ApplicationSetApplicationStatus struct {
 	Application string       `json:"application" protobuf:"bytes,1,opt,name=application"`
 	UID         types.UID    `json:"uid" protobuf:"bytes,2,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
 	CreatedAt   *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,3,opt,name=createdAt"`
-
-	ProgressiveSync *ProgressiveSyncStatus `json:"progressiveSyncStatus,omitempty" protobuf:"bytes,4,opt,name=progressiveSyncStatus"`
 	Health          HealthStatus           `json:"health,omitempty" protobuf:"bytes,5,opt,name=health"`
-}
 
-type ProgressiveSyncStatus struct {
-	// LastTransitionTime is the time the status was last updated
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,2,opt,name=lastTransitionTime"`
-	// Message contains human-readable message indicating details about the status
-	Message string `json:"message" protobuf:"bytes,3,opt,name=message"`
-	// Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
-	Status string `json:"status" protobuf:"bytes,4,opt,name=status"`
-	// Step tracks which step this Application should be updated in
-	Step string `json:"step" protobuf:"bytes,5,opt,name=step"`
+  // Progressive Sync fields
+	// ProgressiveSyncLastTransitionTime is the time the status was last updated
+	ProgressiveSyncLastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,2,opt,name=lastTransitionTime"`
+	// ProgressiveSyncMessage contains human-readable message indicating details about the status of the progressive sync
+	ProgressiveSyncMessage string `json:"message" protobuf:"bytes,3,opt,name=message"`
+	// ProgressiveSyncStatus contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
+  // this is NOT the same as the Application's status
+	ProgressiveSyncStatus string `json:"status" protobuf:"bytes,4,opt,name=status"`
+	// ProgressiveSyncStep tracks which step the Applications should be updated in
+	ProgressiveSyncStep string `json:"step" protobuf:"bytes,5,opt,name=step"`
 }
 
 // ApplicationSetList contains a list of ApplicationSet
