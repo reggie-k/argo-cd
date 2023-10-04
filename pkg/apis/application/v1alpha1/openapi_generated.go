@@ -112,7 +112,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.PluginConfigMapRef":                      schema_pkg_apis_application_v1alpha1_PluginConfigMapRef(ref),
 		"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.PluginGenerator":                         schema_pkg_apis_application_v1alpha1_PluginGenerator(ref),
 		"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.PluginInput":                             schema_pkg_apis_application_v1alpha1_PluginInput(ref),
-		"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.ProgressiveSyncStatus":                   schema_pkg_apis_application_v1alpha1_ProgressiveSyncStatus(ref),
 		"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.ProjectRole":                             schema_pkg_apis_application_v1alpha1_ProjectRole(ref),
 		"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.PullRequestGenerator":                    schema_pkg_apis_application_v1alpha1_PullRequestGenerator(ref),
 		"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.PullRequestGeneratorAzureDevOps":         schema_pkg_apis_application_v1alpha1_PullRequestGeneratorAzureDevOps(ref),
@@ -817,35 +816,63 @@ func schema_pkg_apis_application_v1alpha1_ApplicationSetApplicationStatus(ref co
 							Format:      "",
 						},
 					},
+					"lastTransitionTime": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProgressiveSyncLastTransitionTime is the time the status was last updated",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
+						},
+					},
+					"message": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProgressiveSyncMessage contains human-readable message indicating details about the status of the progressive sync",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"status": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProgressiveSyncStatus contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy) this is NOT the same as the Application's status",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"step": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ProgressiveSyncStep tracks which step the Applications should be updated in",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"uid": {
 						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
+							Description: "UID contains the UID of the application resource",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"createdAt": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"progressiveSyncStatus": {
-						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.ProgressiveSyncStatus"),
+							Description: "CreatedAt contains the time the application was created",
+							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
 						},
 					},
 					"health": {
 						SchemaProps: spec.SchemaProps{
-							Default: map[string]interface{}{},
-							Ref:     ref("github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.HealthStatus"),
+							Description: "Health contains the health status of the application",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.HealthStatus"),
 						},
 					},
 				},
-				Required: []string{"application", "uid"},
+				Required: []string{"application", "message", "status", "step", "uid"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.HealthStatus", "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.ProgressiveSyncStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
+			"github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1.HealthStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 
@@ -4778,51 +4805,6 @@ func schema_pkg_apis_application_v1alpha1_PluginInput(ref common.ReferenceCallba
 		},
 		Dependencies: []string{
 			"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1.JSON"},
-	}
-}
-
-func schema_pkg_apis_application_v1alpha1_ProgressiveSyncStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-				Properties: map[string]spec.Schema{
-					"lastTransitionTime": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LastTransitionTime is the time the status was last updated",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Time"),
-						},
-					},
-					"message": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Message contains human-readable message indicating details about the status",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"status": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"step": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Step tracks which step this Application should be updated in",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"message", "status", "step"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Time"},
 	}
 }
 

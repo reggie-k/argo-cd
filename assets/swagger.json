@@ -5968,11 +5968,24 @@
         "health": {
           "$ref": "#/definitions/v1alpha1HealthStatus"
         },
-        "progressiveSyncStatus": {
-          "$ref": "#/definitions/v1alpha1ProgressiveSyncStatus"
+        "lastTransitionTime": {
+          "$ref": "#/definitions/v1Time"
+        },
+        "message": {
+          "type": "string",
+          "title": "ProgressiveSyncMessage contains human-readable message indicating details about the status of the progressive sync"
+        },
+        "status": {
+          "type": "string",
+          "title": "ProgressiveSyncStatus contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)\nthis is NOT the same as the Application's status"
+        },
+        "step": {
+          "type": "string",
+          "title": "ProgressiveSyncStep tracks which step the Applications should be updated in"
         },
         "uid": {
-          "type": "string"
+          "type": "string",
+          "title": "UID contains the UID of the application resource"
         }
       }
     },
@@ -7685,26 +7698,6 @@
           "additionalProperties": {
             "$ref": "#/definitions/v1JSON"
           }
-        }
-      }
-    },
-    "v1alpha1ProgressiveSyncStatus": {
-      "type": "object",
-      "properties": {
-        "lastTransitionTime": {
-          "$ref": "#/definitions/v1Time"
-        },
-        "message": {
-          "type": "string",
-          "title": "Message contains human-readable message indicating details about the status"
-        },
-        "status": {
-          "type": "string",
-          "title": "Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)"
-        },
-        "step": {
-          "type": "string",
-          "title": "Step tracks which step this Application should be updated in"
         }
       }
     },
