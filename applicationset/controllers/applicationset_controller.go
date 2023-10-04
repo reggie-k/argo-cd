@@ -187,7 +187,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
-	if r.Enable {
+	if r.EnableProgressiveSyncs {
 		appSyncMap, err = r.perform(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
@@ -223,7 +223,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		)
 	}
 
-	if r.Enable {
+	if r.EnableProgressiveSyncs {
 		// trigger appropriate application syncs if RollingSync strategy is enabled
 		if StrategyEnabled(&applicationSetInfo, "RollingSync") {
 			validApps, err = r.syncValidApplications(logCtx, &applicationSetInfo, appSyncMap, appMap, validApps)
