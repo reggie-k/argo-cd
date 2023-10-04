@@ -188,7 +188,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if r.EnableProgressiveSyncs {
-		appSyncMap, err = r.perform(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
+		appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
 		}
@@ -225,7 +225,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if r.EnableProgressiveSyncs {
 		// trigger appropriate application syncs if RollingSync strategy is enabled
-		if StrategyEnabled(&applicationSetInfo, "RollingSync") {
+		if progressiveSyncsStrategyEnabled(&applicationSetInfo, "RollingSync") {
 			validApps, err = r.syncValidApplications(logCtx, &applicationSetInfo, appSyncMap, appMap, validApps)
 
 			if err != nil {
@@ -562,6 +562,18 @@ func appControllerIndexer(rawObj client.Object) []string {
 	if owner.APIVersion != argov1alpha1.SchemeGroupVersion.String() || owner.Kind != "ApplicationSet" {
 		return nil
 	}
+func (r *ApplicationSetReconciler) SetupWithManager(mgr ctrl.Manager, enableProgressiveSyncs bool, maxConcurrentReconciliations int) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &argov1alpha1.Application{}, ".metadata.controller", func(rawObj client.Object) []string {
+		// grab the job object, extract the owner...
+		app := rawObj.(*argov1alpha1.Application)
+		owner := metav1.GetControllerOf(app)
+		if owner == nil {
+			return nil
+		}
+		// ...make sure it's a application set...
+		if owner.APIVersion != argov1alpha1.SchemeGroupVersion.String() || owner.Kind != "ApplicationSet" {
+			return nil
+		}
 
 	// ...and if so, return it
 	return []string{owner.Name}
@@ -572,7 +584,7 @@ func (r *ApplicationSetReconciler) SetupWithManager(mgr ctrl.Manager, enableProg
 		return fmt.Errorf("error setting up with manager: %w", err)
 	}
 
-	ownsHandler := getOwnsHandlerPredicates(enable)
+	ownsHandler := getOwnsHandlerPredicates(enableProgressiveSyncs)
 
 	return ctrl.NewControllerManagedBy(mgr).WithOptions(controller.Options{
 		MaxConcurrentReconciles: maxConcurrentReconciliations,
@@ -884,7 +896,7 @@ func (r *ApplicationSetReconciler) removeFinalizerOnInvalidDestination(ctx conte
 	return nil
 }
 
-func (r *ApplicationSetReconciler) removeOwnerReferencesOnDeleteAppSet(ctx context.Context, applicationSet argov1alpha1.ApplicationSet) error {
+func (r *ApplicationSetReconciler) removeOwnerReferencesOnDeleteAppSetProgressiveSyncs(ctx context.Context, applicationSet argov1alpha1.ApplicationSet) error {
 	applications, err := r.getCurrentApplications(ctx, application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatusSet)
 	if err != nil {
 		return err
@@ -946,7 +958,7 @@ func (r *ApplicationSetReconciler) buildAppDependencyList(logCtx *log.Entry, app
 	}
 
 	steps := []argov1alpha1.ApplicationSetRolloutStep{}
-	if StrategyEnabled(&applicationSet, "RollingSync") {
+	if progressiveSyncsStrategyEnabled(&applicationSet, "RollingSync") {
 		steps = applicationSet.Spec.Strategy.RollingSync.Steps
 	}
 
@@ -1057,7 +1069,7 @@ func (r *ApplicationSetReconciler) buildAppSyncMap(ctx context.Context, applicat
 
 func appSyncEnabledForNextStep(appset *argov1alpha1.ApplicationSet, app argov1alpha1.Application, appStatus argov1alpha1.ApplicationSetApplicationStatus) bool {
 
-	if StrategyEnabled(appset, "RollingSync") {
+	if progressiveSyncsStrategyEnabled(appset, "RollingSync") {
 		// we still need to complete the current step if the Application is not yet Healthy or there are still pending Application changes
 		return isApplicationHealthy(app) && appStatus.ProgressiveSyncStatus == "Healthy"
 	}
@@ -1065,7 +1077,7 @@ func appSyncEnabledForNextStep(appset *argov1alpha1.ApplicationSet, app argov1al
 	return true
 }
 
-func StrategyEnabled(appset *argov1alpha1.ApplicationSet, strategyType string) bool {
+func progressiveSyncsStrategyEnabled(appset *argov1alpha1.ApplicationSet, strategyType string) bool {
 	if appset.Spec.Strategy == nil || appset.Spec.Strategy.Type != strategyType {
 		return false
 	}
@@ -1122,7 +1134,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 		}
 
 		appOutdated := false
-		if StrategyEnabled(applicationSet, "RollingSync") {
+		if progressiveSyncsStrategyEnabled(applicationSet, "RollingSync") {
 			appOutdated = syncStatusString == "OutOfSync"
 		}
 
@@ -1187,7 +1199,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 		totalCountMap := []int{}
 
 		length := 0
-		if StrategyEnabled(applicationSet, "RollingSync") {
+		if progressiveSyncsStrategyEnabled(applicationSet, "RollingSync") {
 			length = len(applicationSet.Spec.Strategy.RollingSync.Steps)
 		}
 		for s := 0; s < length; s++ {
@@ -1199,7 +1211,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 		for _, appStatus := range applicationSet.Status.ApplicationStatus {
 			totalCountMap[appStepMap[appStatus.Application]] += 1
 
-			if StrategyEnabled(applicationSet, "RollingSync") {
+			if progressiveSyncsStrategyEnabled(applicationSet, "RollingSync") {
 				if appStatus.ProgressiveSyncStatus == "Pending" || appStatus.ProgressiveSyncStatus == "Progressing" {
 					updateCountMap[appStepMap[appStatus.Application]] += 1
 				}
@@ -1210,7 +1222,7 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 
 			maxUpdateAllowed := true
 			maxUpdate := &intstr.IntOrString{}
-			if StrategyEnabled(applicationSet, "RollingSync") {
+			if progressiveSyncsStrategyEnabled(applicationSet, "RollingSync") {
 				maxUpdate = applicationSet.Spec.Strategy.RollingSync.Steps[appStepMap[appStatus.Application]].MaxUpdate
 			}
 
@@ -1411,7 +1423,7 @@ func syncApplication(application argov1alpha1.Application, prune bool) (argov1al
 	return application, nil
 }
 
-func getOwnsHandlerPredicates(enable bool) predicate.Funcs {
+func getOwnsHandlerPredicates(enableProgressiveSyncs bool) predicate.Funcs {
 	return predicate.Funcs{
 		CreateFunc: func(e event.CreateEvent) bool {
 			// if we are the owner and there is a create event, we most likely created it and do not need to
@@ -1448,7 +1460,7 @@ func getOwnsHandlerPredicates(enable bool) predicate.Funcs {
 			if !isApp {
 				return false
 			}
-			requeue := shouldRequeueApplicationSet(appOld, appNew, enable)
+			requeue := shouldRequeueApplicationSet(appOld, appNew, enableProgressiveSyncs)
 			logCtx.WithField("requeue", requeue).Debugf("requeue: %t caused by application %s\n", requeue, appNew.Name)
 			return requeue
 		},
