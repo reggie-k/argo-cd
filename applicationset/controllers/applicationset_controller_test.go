@@ -4564,7 +4564,7 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 		appSet            v1alpha1.ApplicationSet
 		apps              []v1alpha1.Application
 		appStepMap        map[string]int
-		expectedAppStatus []v1alpha1.ApplicationSetApplicationStatus
+		expectedAppStatus map[string]v1alpha1.ApplicationSetApplicationStatus
 	}{
 		{
 			name: "handles a nil list of statuses and no applications",
@@ -4581,7 +4581,7 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 				},
 			},
 			apps:              []v1alpha1.Application{},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{},
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{},
 		},
 		{
 			name: "handles a nil list of statuses with a healthy application",
@@ -4615,8 +4615,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource is already Healthy, updating status from Waiting to Healthy.",
 					ProgressiveSyncStatus:  "Healthy",
@@ -4657,8 +4657,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource is already Healthy, updating status from Waiting to Healthy.",
 					ProgressiveSyncStatus:  "Healthy",
@@ -4702,8 +4702,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application has pending changes, setting status to Waiting.",
 					ProgressiveSyncStatus:  "Waiting",
@@ -4747,8 +4747,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource became Progressing, updating status from Pending to Progressing.",
 					ProgressiveSyncStatus:  "Progressing",
@@ -4798,8 +4798,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource became Progressing, updating status from Pending to Progressing.",
 					ProgressiveSyncStatus:  "Progressing",
@@ -4849,8 +4849,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource became Healthy, updating status from Progressing to Healthy.",
 					ProgressiveSyncStatus:  "Healthy",
@@ -4900,8 +4900,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource is already Healthy, updating status from Waiting to Healthy.",
 					ProgressiveSyncStatus:  "Healthy",
@@ -4945,8 +4945,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 				"app1": 1,
 				"app2": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "No Application status found, defaulting status to Waiting.",
 					ProgressiveSyncStatus:  "Waiting",
@@ -5002,8 +5002,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource completed a sync successfully, updating status from Pending to Progressing.",
 					ProgressiveSyncStatus:  "Progressing",
@@ -5059,8 +5059,8 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application resource completed a sync successfully, updating status from Pending to Progressing.",
 					ProgressiveSyncStatus:  "Progressing",
@@ -5116,68 +5116,11 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:            "app1",
 					ProgressiveSyncMessage: "Application moved to Pending status, watching for the Application resource to start Progressing.",
 					ProgressiveSyncStatus:  "Pending",
-					ProgressiveSyncStep:    "1",
-				},
-			},
-		},
-		{
-			name: "removes the appStatus for applications that no longer exist",
-			appSet: v1alpha1.ApplicationSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "name",
-					Namespace: "argocd",
-				},
-				Spec: v1alpha1.ApplicationSetSpec{
-					Strategy: &v1alpha1.ApplicationSetStrategy{
-						Type:        "RollingSync",
-						RollingSync: &v1alpha1.ApplicationSetRolloutStrategy{},
-					},
-				},
-				Status: v1alpha1.ApplicationSetStatus{
-					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
-						{
-							Application:            "app1",
-							ProgressiveSyncMessage: "Application has pending changes, setting status to Waiting.",
-							ProgressiveSyncStatus:  "Waiting",
-							ProgressiveSyncStep:    "1",
-						},
-						{
-							Application:            "app2",
-							ProgressiveSyncMessage: "Application has pending changes, setting status to Waiting.",
-							ProgressiveSyncStatus:  "Waiting",
-							ProgressiveSyncStep:    "1",
-						},
-					},
-				},
-			},
-			apps: []v1alpha1.Application{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "app1",
-					},
-					Status: v1alpha1.ApplicationStatus{
-						Health: v1alpha1.HealthStatus{
-							Status: health.HealthStatusHealthy,
-						},
-						OperationState: &v1alpha1.OperationState{
-							Phase: common.OperationSucceeded,
-						},
-						Sync: v1alpha1.SyncStatus{
-							Status: v1alpha1.SyncStatusCodeSynced,
-						},
-					},
-				},
-			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
-					Application:            "app1",
-					ProgressiveSyncMessage: "Application resource is already Healthy, updating status from Waiting to Healthy.",
-					ProgressiveSyncStatus:  "Healthy",
 					ProgressiveSyncStep:    "1",
 				},
 			},
@@ -5203,11 +5146,14 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 				KubeClientset:    kubeclientset,
 			}
 
-			appStatuses, err := r.updateApplicationSetApplicationStatus(context.TODO(), log.NewEntry(log.StandardLogger()), &cc.appSet, cc.apps, cc.appStepMap, map[string]v1alpha1.ApplicationSetApplicationStatus{})
+			statusMap := r.getCurrentApplicationStatuses(&cc.appSet)
+
+			appStatuses, err := r.updateApplicationSetApplicationStatus(context.TODO(), log.NewEntry(log.StandardLogger()), &cc.appSet, cc.apps, cc.appStepMap, statusMap)
 
 			// opt out of testing the LastTransitionTime is accurate
-			for _, status := range appStatuses {
+			for app, status := range appStatuses {
 				status.ProgressiveSyncLastTransitionTime = nil
+				appStatuses[app] = status
 			}
 
 			assert.Equal(t, err, nil, "expected no errors, but errors occured")
@@ -5231,7 +5177,7 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 		appSyncMap        map[string]bool
 		appStepMap        map[string]int
 		appMap            map[string]v1alpha1.Application
-		expectedAppStatus []v1alpha1.ApplicationSetApplicationStatus
+		expectedAppStatus map[string]v1alpha1.ApplicationSetApplicationStatus
 	}{
 		{
 			name: "handles an empty appSync and appStepMap",
@@ -5261,7 +5207,7 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 			},
 			appSyncMap:        map[string]bool{},
 			appStepMap:        map[string]int{},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{},
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{},
 		},
 		{
 			name: "handles an empty strategy",
@@ -5277,7 +5223,7 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 			},
 			appSyncMap:        map[string]bool{},
 			appStepMap:        map[string]int{},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{},
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{},
 		},
 		{
 			name: "handles an empty applicationset strategy",
@@ -5295,7 +5241,7 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 			},
 			appSyncMap:        map[string]bool{},
 			appStepMap:        map[string]int{},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{},
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{},
 		},
 		{
 			name: "handles an appSyncMap with no existing statuses",
@@ -5316,7 +5262,7 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 				"app1": 0,
 				"app2": 1,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{},
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{},
 		},
 		{
 			name: "handles updating a RollingSync status from Waiting to Pending",
@@ -5356,8 +5302,8 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 			appStepMap: map[string]int{
 				"app1": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
@@ -5405,8 +5351,8 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 			appStepMap: map[string]int{
 				"app1": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
@@ -5454,8 +5400,8 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 			appStepMap: map[string]int{
 				"app1": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application Pending status timed out while waiting to become Progressing, reset status to Healthy.",
@@ -5573,29 +5519,29 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 					},
 				},
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application resource became Progressing, updating status from Pending to Progressing.",
 					ProgressiveSyncStatus:             "Progressing",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app2": {
 					Application:                       "app2",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
 					ProgressiveSyncStatus:             "Pending",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app3": {
 					Application:                       "app3",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
 					ProgressiveSyncStatus:             "Waiting",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app4": {
 					Application:                       "app4",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
@@ -5663,22 +5609,22 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 				"app2": 0,
 				"app3": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
 					ProgressiveSyncStatus:             "Pending",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app2": {
 					Application:                       "app2",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
 					ProgressiveSyncStatus:             "Waiting",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app3": {
 					Application:                       "app3",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
@@ -5746,22 +5692,22 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 				"app2": 0,
 				"app3": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
 					ProgressiveSyncStatus:             "Waiting",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app2": {
 					Application:                       "app2",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
 					ProgressiveSyncStatus:             "Waiting",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app3": {
 					Application:                       "app3",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
@@ -5829,22 +5775,22 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 				"app2": 0,
 				"app3": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
 					ProgressiveSyncStatus:             "Pending",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app2": {
 					Application:                       "app2",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
 					ProgressiveSyncStatus:             "Pending",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app3": {
 					Application:                       "app3",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
@@ -5912,22 +5858,22 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 				"app2": 0,
 				"app3": 0,
 			},
-			expectedAppStatus: []v1alpha1.ApplicationSetApplicationStatus{
-				{
+			expectedAppStatus: map[string]v1alpha1.ApplicationSetApplicationStatus{
+				"app1": {
 					Application:                       "app1",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application moved to Pending status, watching for the Application resource to start Progressing.",
 					ProgressiveSyncStatus:             "Pending",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app2": {
 					Application:                       "app2",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
 					ProgressiveSyncStatus:             "Waiting",
 					ProgressiveSyncStep:               "1",
 				},
-				{
+				"app3": {
 					Application:                       "app3",
 					ProgressiveSyncLastTransitionTime: nil,
 					ProgressiveSyncMessage:            "Application is out of date with the current AppSet generation, setting status to Waiting.",
@@ -5957,11 +5903,14 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 				KubeClientset:    kubeclientset,
 			}
 
-			appStatuses, err := r.updateApplicationSetApplicationStatusProgress(context.TODO(), log.NewEntry(log.StandardLogger()), &cc.appSet, cc.appSyncMap, cc.appStepMap, cc.appMap, map[string]v1alpha1.ApplicationSetApplicationStatus{})
+			statusMap := r.getCurrentApplicationStatuses(&cc.appSet)
+
+			appStatuses, err := r.updateApplicationSetApplicationStatusProgress(context.TODO(), log.NewEntry(log.StandardLogger()), &cc.appSet, cc.appSyncMap, cc.appStepMap, cc.appMap, statusMap)
 
 			// opt out of testing the LastTransitionTime is accurate
-			for _, status := range appStatuses {
+			for app, status := range appStatuses {
 				status.ProgressiveSyncLastTransitionTime = nil
+				appStatuses[app] = status
 			}
 
 			assert.Equal(t, err, nil, "expected no errors, but errors occured")

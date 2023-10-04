@@ -168,7 +168,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// appMap is a name->app collection of Applications in this ApplicationSet.
 	appMap := map[string]argov1alpha1.Application{}
 	// statusMap is an appName->status collection of the Applications in this ApplicationSet.
-	statusMap := map[string]argov1alpha1.ApplicationSetApplicationStatus{}
+	statusMap := r.getCurrentApplicationStatuses(&applicationSetInfo)
 	// appSyncMap tracks which apps will be synced during this reconciliation.
 	appSyncMap := map[string]bool{}
 
@@ -179,13 +179,20 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	for _, app := range currentApplications {
 		appMap[app.Name] = app
-		statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
-			Application: app.Name,
-			UID:         app.UID,
-			CreatedAt:   &app.CreationTimestamp,
-			Health:      app.Status.Health,
+
+		// Create status if it does not yet exist
+		if _, ok := statusMap[app.Name]; !ok {
+			statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
+				Application: app.Name,
+				UID:         app.UID,
+				CreatedAt:   &app.CreationTimestamp,
+				Health:      app.Status.Health,
+			}
+
+			continue
 		}
 	}
+	r.cleanupDeletedApplicationStatuses(statusMap, appMap)
 
 	if r.EnableProgressiveSyncs {
 		appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
@@ -1362,6 +1369,42 @@ func (r *ApplicationSetReconciler) setAppSetApplicationStatus(ctx context.Contex
 	}
 
 	return nil
+}
+
+// setApplicationSetStatusCondition uses the data stored in the applicationset status
+// to create a map of applications and their statuses
+func (r *ApplicationSetReconciler) getCurrentApplicationStatuses(applicationSet *argov1alpha1.ApplicationSet) map[string]argov1alpha1.ApplicationSetApplicationStatus {
+	applicationStatuses := make(map[string]argov1alpha1.ApplicationSetApplicationStatus)
+	for _, app := range applicationSet.Status.ApplicationStatus {
+		applicationStatuses[app.Application] = app
+	}
+	return applicationStatuses
+}
+
+func (r *ApplicationSetReconciler) cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus, appMap map[string]argov1alpha1.Application) {
+	for name := range statusMap {
+		if _, ok := appMap[name]; !ok {
+			delete(statusMap, name)
+		}
+	}
+}
+
+// setApplicationSetStatusCondition uses the data stored in the applicationset status
+// to create a map of applications and their statuses
+func (r *ApplicationSetReconciler) getCurrentApplicationStatuses(applicationSet *argov1alpha1.ApplicationSet) map[string]argov1alpha1.ApplicationSetApplicationStatus {
+	applicationStatuses := make(map[string]argov1alpha1.ApplicationSetApplicationStatus)
+	for _, app := range applicationSet.Status.ApplicationStatus {
+		applicationStatuses[app.Application] = app
+	}
+	return applicationStatuses
+}
+
+func (r *ApplicationSetReconciler) cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus, appMap map[string]argov1alpha1.Application) {
+	for name := range statusMap {
+		if _, ok := appMap[name]; !ok {
+			delete(statusMap, name)
+		}
+	}
 }
 
 func (r *ApplicationSetReconciler) syncValidApplications(logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, appSyncMap map[string]bool, appMap map[string]argov1alpha1.Application, validApps []argov1alpha1.Application) ([]argov1alpha1.Application, error) {
