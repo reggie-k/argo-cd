@@ -200,14 +200,21 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
 		}
 	}
-	r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statusMap)
 
 	var validApps []argov1alpha1.Application
-	for i := range desiredApplications {
+	for i, app := range desiredApplications {
 		if validateErrors[i] == nil {
 			validApps = append(validApps, desiredApplications[i])
+
+			statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
+				Application: app.Name,
+				UID:         app.UID,
+				CreatedAt:   &app.CreationTimestamp,
+				Health:      app.Status.Health,
+			}
 		}
 	}
+	r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statusMap)
 
 	if len(validateErrors) > 0 {
 		var message string
