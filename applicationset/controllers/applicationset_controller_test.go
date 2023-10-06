@@ -6239,7 +6239,7 @@ func TestAddStatus(t *testing.T) {
 		expectedStatus []v1alpha1.ApplicationSetApplicationStatus
 	}{
 		{
-			name: "create application should add status",
+			name: "adds status for created applications",
 			appSet: v1alpha1.ApplicationSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "name",
@@ -6274,7 +6274,7 @@ func TestAddStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "deleted application should remove status",
+			name: "removes status for deleted applications",
 			appSet: v1alpha1.ApplicationSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "name",
@@ -6301,8 +6301,134 @@ func TestAddStatus(t *testing.T) {
 			existingApps:   nil,
 			expectedStatus: nil,
 		},
+		{
+			name: "keeps existing data in status between reconciles",
+			appSet: v1alpha1.ApplicationSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "argocd",
+				},
+				Spec: v1alpha1.ApplicationSetSpec{
+					Generators: []v1alpha1.ApplicationSetGenerator{
+						{
+							List: &v1alpha1.ListGenerator{
+								Elements: []apiextensionsv1.JSON{{
+									Raw: []byte(`{"name": "app1"}`),
+								}},
+							},
+						},
+					},
+					Template: v1alpha1.ApplicationSetTemplate{
+						ApplicationSetTemplateMeta: v1alpha1.ApplicationSetTemplateMeta{
+							Name: "{{name}}",
+						},
+						Spec: v1alpha1.ApplicationSpec{
+							Project: "test-project",
+						},
+					},
+				},
+				Status: v1alpha1.ApplicationSetStatus{
+					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
+						{
+							Application: "app1",
+							// ProgressiveSync is disabled, just makes sure it keeps status between operations
+							ProgressiveSyncMessage: "test progressive sync message",
+						},
+					},
+				},
+			},
+			existingApps: []v1alpha1.Application{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       application.ApplicationKind,
+						APIVersion: "argoproj.io/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "app1",
+						Namespace:       "argocd",
+						ResourceVersion: "1",
+					},
+					Spec: v1alpha1.ApplicationSpec{
+						Project: "test-project",
+					},
+				},
+			},
+			expectedStatus: []v1alpha1.ApplicationSetApplicationStatus{
+				{
+					Application:            "app1",
+					ProgressiveSyncMessage: "test progressive sync message",
+				},
+			},
+		},
+		{
+			name: "updates status to match application",
+			appSet: v1alpha1.ApplicationSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "argocd",
+				},
+				Spec: v1alpha1.ApplicationSetSpec{
+					Generators: []v1alpha1.ApplicationSetGenerator{
+						{
+							List: &v1alpha1.ListGenerator{
+								Elements: []apiextensionsv1.JSON{{
+									Raw: []byte(`{"name": "app1"}`),
+								}},
+							},
+						},
+					},
+					Template: v1alpha1.ApplicationSetTemplate{
+						ApplicationSetTemplateMeta: v1alpha1.ApplicationSetTemplateMeta{
+							Name: "{{name}}",
+						},
+						Spec: v1alpha1.ApplicationSpec{
+							Project: "test-project",
+						},
+					},
+				},
+				Status: v1alpha1.ApplicationSetStatus{
+					ApplicationStatus: []v1alpha1.ApplicationSetApplicationStatus{
+						{
+							Application: "app1",
+							Health: v1alpha1.HealthStatus{
+								Status: health.HealthStatusMissing,
+							},
+						},
+					},
+				},
+			},
+			existingApps: []v1alpha1.Application{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       application.ApplicationKind,
+						APIVersion: "argoproj.io/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "app1",
+						Namespace:       "argocd",
+						ResourceVersion: "1",
+					},
+					Spec: v1alpha1.ApplicationSpec{
+						Project: "test-project",
+					},
+					Status: v1alpha1.ApplicationStatus{
+						Health: v1alpha1.HealthStatus{
+							Status: health.HealthStatusHealthy,
+						},
+					},
+				},
+			},
+			expectedStatus: []v1alpha1.ApplicationSetApplicationStatus{
+				{
+					Application: "app1",
+					Health: v1alpha1.HealthStatus{
+						Status: health.HealthStatusHealthy,
+					},
+				},
+			},
+		},
+
 		// TODO: tests to add
-		// existing status should keep data between reconcile
 		// status updates when app status changes
 	} {
 		t.Run(c.name, func(t *testing.T) {

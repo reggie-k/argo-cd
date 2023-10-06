@@ -165,34 +165,16 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{RequeueAfter: ReconcileRequeueOnValidationError}, nil
 	}
 
-	// appMap is a name->app collection of Applications in this ApplicationSet.
-	appMap := map[string]argov1alpha1.Application{}
-	// statusMap is an appName->status collection of the Applications in this ApplicationSet.
-	statusMap := r.getCurrentApplicationStatuses(&applicationSetInfo)
-	// appSyncMap tracks which apps will be synced during this reconciliation.
-	appSyncMap := map[string]bool{}
-
 	currentApplications, err := r.getCurrentApplications(ctx, applicationSetInfo)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to get current applications for application set: %w", err)
 	}
 
-	for _, app := range currentApplications {
-		appMap[app.Name] = app
-
-		// Create status if it does not yet exist
-		if _, ok := statusMap[app.Name]; !ok {
-			statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
-				Application: app.Name,
-				UID:         app.UID,
-				CreatedAt:   &app.CreationTimestamp,
-				Health:      app.Status.Health,
-			}
-
-			continue
-		}
-	}
-	r.cleanupDeletedApplicationStatuses(statusMap, appMap)
+	// appMap is a name->app collection of Applications in this ApplicationSet.
+	// statusMap is an appName->status collection of the Applications in this ApplicationSet.
+	appMap, statusMap := r.buildApplicationMaps(currentApplications, desiredApplications, r.getCurrentApplicationStatuses(&applicationSetInfo))
+	// appSyncMap tracks which apps will be synced during this reconciliation.
+	appSyncMap := map[string]bool{}
 
 	if r.EnableProgressiveSyncs {
 		appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
@@ -206,11 +188,12 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		if validateErrors[i] == nil {
 			validApps = append(validApps, desiredApplications[i])
 
-			statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
-				Application: app.Name,
-				UID:         app.UID,
-				CreatedAt:   &app.CreationTimestamp,
-				Health:      app.Status.Health,
+			// Create status for new apps
+			_, ok := statusMap[app.Name]
+			if !ok {
+				statusMap[app.Name] = argov1alpha1.ApplicationSetApplicationStatus{
+					Application: app.Name,
+				}
 			}
 		}
 	}
@@ -1388,9 +1371,40 @@ func (r *ApplicationSetReconciler) getCurrentApplicationStatuses(applicationSet 
 	return applicationStatuses
 }
 
-func (r *ApplicationSetReconciler) cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus, appMap map[string]argov1alpha1.Application) {
+func (r *ApplicationSetReconciler) buildApplicationMaps(apps []argov1alpha1.Application, desiredApplications []argov1alpha1.Application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.Application, map[string]argov1alpha1.ApplicationSetApplicationStatus) {
+	appMap := map[string]argov1alpha1.Application{}
+	for _, app := range apps {
+		appMap[app.Name] = app
+
+		// Create status if it does not exist
+		status, ok := statusMap[app.Name]
+		if !ok {
+			status = argov1alpha1.ApplicationSetApplicationStatus{
+				Application: app.Name,
+				UID:         app.UID,
+				CreatedAt:   &app.CreationTimestamp,
+			}
+		}
+
+		status.UID = app.UID
+		status.CreatedAt = &app.CreationTimestamp
+		status.Health = app.Status.Health
+
+		statusMap[app.Name] = status
+	}
+	cleanupDeletedApplicationStatuses(statusMap, desiredApplications)
+
+	return appMap, statusMap
+}
+
+func cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus, desiredApplications []argov1alpha1.Application) {
+	desiredMap := map[string]argov1alpha1.Application{}
+	for _, app := range desiredApplications {
+		desiredMap[app.Name] = app
+	}
+
 	for name := range statusMap {
-		if _, ok := appMap[name]; !ok {
+		if _, ok := desiredMap[name]; !ok {
 			delete(statusMap, name)
 		}
 	}
