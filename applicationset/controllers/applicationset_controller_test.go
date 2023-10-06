@@ -6427,9 +6427,6 @@ func TestAddStatus(t *testing.T) {
 				},
 			},
 		},
-
-		// TODO: tests to add
-		// status updates when app status changes
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			project := v1alpha1.AppProject{
