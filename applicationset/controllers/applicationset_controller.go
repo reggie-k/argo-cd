@@ -197,7 +197,11 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 		}
 	}
-	r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statusMap)
+
+	err = r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statusMap)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to set application set application status: %w", err)
+	}
 
 	if len(validateErrors) > 0 {
 		var message string
