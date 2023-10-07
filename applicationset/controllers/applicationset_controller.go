@@ -177,7 +177,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	appSyncMap := map[string]bool{}
 
 	if r.EnableProgressiveSyncs {
-		appSyncMap, err = r.performProgressiveSyncs(ctx, applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
+		appSyncMap, err = r.performProgressiveSyncs(ctx, &applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
 		}
@@ -921,7 +921,12 @@ func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, 
 		return nil, fmt.Errorf("failed to build app dependency list: %w", err)
 	}
 
-	_, err = r.updateApplicationSetApplicationStatus(ctx, logCtx, &appset, applications, appStepMap, statusMap)
+	_, err = r.updateApplicationSetApplicationStatus(ctx, logCtx, appset, applications, appStepMap, statusMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update applicationset app status: %w", err)
+	}
+
+	err = r.setAppSetApplicationStatus(ctx, appset, statusMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update applicationset app status: %w", err)
 	}
@@ -931,19 +936,19 @@ func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, 
 		logCtx.Infof("step %v: %+v", i+1, step)
 	}
 
-	appSyncMap, err := r.buildAppSyncMap(ctx, appset, appDependencyList, appMap)
+	appSyncMap, err := r.buildAppSyncMap(ctx, *appset, appDependencyList, appMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build app sync map: %w", err)
 	}
 
 	logCtx.Infof("Application allowed to sync before maxUpdate?: %+v", appSyncMap)
 
-	_, err = r.updateApplicationSetApplicationStatusProgress(ctx, logCtx, &appset, appSyncMap, appStepMap, appMap, statusMap)
+	_, err = r.updateApplicationSetApplicationStatusProgress(ctx, logCtx, appset, appSyncMap, appStepMap, appMap, statusMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update applicationset application status progress: %w", err)
 	}
 
-	_, err = r.updateApplicationSetApplicationStatusConditions(ctx, &appset)
+	_, err = r.updateApplicationSetApplicationStatusConditions(ctx, appset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update applicationset application status conditions: %w", err)
 	}
@@ -1118,20 +1123,22 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 
 		healthStatusString, syncStatusString, operationPhaseString := statusStrings(app)
 
-		currentAppStatus := argov1alpha1.ApplicationSetApplicationStatus{}
-		status, ok := statusMap[app.Name]
+		currentAppStatus, ok := statusMap[app.Name]
 		if !ok {
 			// AppStatus not found, set default status of "Waiting"
 			currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
-				Application:                       app.Name,
-				ProgressiveSyncLastTransitionTime: &now,
-				ProgressiveSyncMessage:            "No Application status found, defaulting status to Waiting.",
-				ProgressiveSyncStatus:             "Waiting",
-				ProgressiveSyncStep:               fmt.Sprint(appStepMap[app.Name] + 1),
+				Application: app.Name,
+				UID:         app.UID,
+				CreatedAt:   &app.CreationTimestamp,
 			}
-		} else {
-			// we have an existing AppStatus
-			currentAppStatus = status
+		}
+
+		// No status, set default status
+		if currentAppStatus.ProgressiveSyncStatus == "" {
+			currentAppStatus.ProgressiveSyncLastTransitionTime = &now
+			currentAppStatus.ProgressiveSyncMessage = "No Application status found, defaulting status to Waiting."
+			currentAppStatus.ProgressiveSyncStatus = "Waiting"
+			currentAppStatus.ProgressiveSyncStep = fmt.Sprint(appStepMap[app.Name] + 1)
 		}
 
 		appOutdated := false
@@ -1360,6 +1367,7 @@ func (r *ApplicationSetReconciler) setAppSetApplicationStatus(ctx context.Contex
 			}
 			return fmt.Errorf("error fetching updated application set: %v", err)
 		}
+		fmt.Println("")
 	}
 
 	return nil

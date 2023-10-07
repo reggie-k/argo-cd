@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+
 	k8scache "k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -6237,6 +6238,8 @@ func TestAddStatus(t *testing.T) {
 		existingApps []v1alpha1.Application
 		// desiredApps are the generated apps to create/update
 		expectedStatus []v1alpha1.ApplicationSetApplicationStatus
+		// enableProgressiveSyncs is whether or not progressive syncs feature is enabled
+		enableProgressiveSyncs bool
 	}{
 		{
 			name: "adds status for created applications",
@@ -6427,6 +6430,91 @@ func TestAddStatus(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:                   "progressive sync updates its status and preserves other data",
+			enableProgressiveSyncs: true,
+			appSet: v1alpha1.ApplicationSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "name",
+					Namespace: "argocd",
+				},
+				Spec: v1alpha1.ApplicationSetSpec{
+					Generators: []v1alpha1.ApplicationSetGenerator{
+						{
+							List: &v1alpha1.ListGenerator{
+								Elements: []apiextensionsv1.JSON{{
+									Raw: []byte(`{"name": "app1"}`),
+								}},
+							},
+						},
+					},
+					Strategy: &v1alpha1.ApplicationSetStrategy{
+						Type: "RollingSync",
+						RollingSync: &v1alpha1.ApplicationSetRolloutStrategy{
+							Steps: []v1alpha1.ApplicationSetRolloutStep{
+								{
+									MatchExpressions: []v1alpha1.ApplicationMatchExpression{
+										{
+											Key:      "env",
+											Operator: "In",
+											Values: []string{
+												"dev",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					Template: v1alpha1.ApplicationSetTemplate{
+						ApplicationSetTemplateMeta: v1alpha1.ApplicationSetTemplateMeta{
+							Name: "{{name}}",
+							Labels: map[string]string{
+								"env": "dev",
+							},
+						},
+						Spec: v1alpha1.ApplicationSpec{
+							Project: "test-project",
+						},
+					},
+				},
+			},
+			existingApps: []v1alpha1.Application{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       application.ApplicationKind,
+						APIVersion: "argoproj.io/v1alpha1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "app1",
+						Namespace:       "argocd",
+						ResourceVersion: "1",
+					},
+					Spec: v1alpha1.ApplicationSpec{
+						Project: "test-project",
+					},
+					Status: v1alpha1.ApplicationStatus{
+						Sync: v1alpha1.SyncStatus{
+							Status: v1alpha1.SyncStatusCodeOutOfSync,
+						},
+						Health: v1alpha1.HealthStatus{
+							Status: health.HealthStatusHealthy,
+						},
+					},
+				},
+			},
+			expectedStatus: []v1alpha1.ApplicationSetApplicationStatus{
+				{
+					Application: "app1",
+					Health: v1alpha1.HealthStatus{
+						Status: health.HealthStatusHealthy,
+					},
+					ProgressiveSyncMessage: "Application moved to Pending status, watching for the Application resource to start Progressing.",
+					ProgressiveSyncStatus:  "Pending",
+					ProgressiveSyncStep:    "1",
+				},
+			},
+		},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			project := v1alpha1.AppProject{
@@ -6454,11 +6542,12 @@ func TestAddStatus(t *testing.T) {
 				Generators: map[string]generators.Generator{
 					"List": generators.NewListGenerator(),
 				},
-				ArgoDB:           &argoDBMock,
-				ArgoAppClientset: appclientset.NewSimpleClientset(argoObjs...),
-				KubeClientset:    kubeclientset,
-				Policy:           v1alpha1.ApplicationsSyncPolicySync,
-				ArgoCDNamespace:  "argocd",
+				ArgoDB:                 &argoDBMock,
+				ArgoAppClientset:       appclientset.NewSimpleClientset(argoObjs...),
+				KubeClientset:          kubeclientset,
+				Policy:                 v1alpha1.ApplicationsSyncPolicySync,
+				ArgoCDNamespace:        "argocd",
+				EnableProgressiveSyncs: c.enableProgressiveSyncs,
 			}
 
 			req := ctrl.Request{
@@ -6476,6 +6565,12 @@ func TestAddStatus(t *testing.T) {
 				Namespace: c.appSet.Namespace,
 				Name:      c.appSet.Name,
 			}, got)
+
+			// opt out of testing the LastTransitionTime is accurate
+			for i := range got.Status.ApplicationStatus {
+				got.Status.ApplicationStatus[i].ProgressiveSyncLastTransitionTime = nil
+			}
+
 			assert.Nil(t, err)
 			assert.Equal(t, c.expectedStatus, got.Status.ApplicationStatus)
 		})
