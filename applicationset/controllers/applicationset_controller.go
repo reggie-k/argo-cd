@@ -1116,14 +1116,14 @@ func statusStrings(app argov1alpha1.Application) (string, string, string) {
 }
 
 // check the status of each Application's status and promote Applications to the next status if needed
-func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, appStepMap map[string]int, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.ApplicationSetApplicationStatus, error) {
+func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, appStepMap map[string]int, appStatuses map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.ApplicationSetApplicationStatus, error) {
 	now := metav1.Now()
 
 	for _, app := range applications {
 
 		healthStatusString, syncStatusString, operationPhaseString := statusStrings(app)
 
-		currentAppStatus, ok := statusMap[app.Name]
+		currentAppStatus, ok := appStatuses[app.Name]
 		if !ok {
 			// AppStatus not found, set default status of "Waiting"
 			currentAppStatus = argov1alpha1.ApplicationSetApplicationStatus{
@@ -1191,14 +1191,14 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatus(ctx con
 			currentAppStatus.ProgressiveSyncStep = fmt.Sprint(appStepMap[currentAppStatus.Application] + 1)
 		}
 
-		statusMap[app.Name] = currentAppStatus
+		appStatuses[app.Name] = currentAppStatus
 	}
 
-	return statusMap, nil
+	return appStatuses, nil
 }
 
 // check Applications that are in Waiting status and promote them to Pending if needed
-func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, appSyncMap map[string]bool, appStepMap map[string]int, appMap map[string]argov1alpha1.Application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.ApplicationSetApplicationStatus, error) {
+func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress(ctx context.Context, logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, appSyncMap map[string]bool, appStepMap map[string]int, appMap map[string]argov1alpha1.Application, appStatuses map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]argov1alpha1.ApplicationSetApplicationStatus, error) {
 	now := metav1.Now()
 
 	// if we have no RollingUpdate steps, clear out the existing ApplicationStatus entries
@@ -1263,11 +1263,11 @@ func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusProgress
 				updateCountMap[appStepMap[appStatus.Application]] += 1
 			}
 
-			statusMap[appStatus.Application] = appStatus
+			appStatuses[appStatus.Application] = appStatus
 		}
 	}
 
-	return statusMap, nil
+	return appStatuses, nil
 }
 
 func (r *ApplicationSetReconciler) updateApplicationSetApplicationStatusConditions(ctx context.Context, applicationSet *argov1alpha1.ApplicationSet) ([]argov1alpha1.ApplicationSetCondition, error) {
@@ -1560,7 +1560,7 @@ func getOwnsHandlerPredicates(enableProgressiveSyncs bool) predicate.Funcs {
 // We do not need to re-reconcile if parts of the application change outside the applicationset's control.
 // An example being, Application.ApplicationStatus.ReconciledAt which gets updated by the application controller.
 // Additionally, Application.ObjectMeta.ResourceVersion and Application.ObjectMeta.Generation which are set by K8s.
-func shouldRequeueApplicationSet(appOld *argov1alpha1.Application, appNew *argov1alpha1.Application, enable bool) bool {
+func shouldRequeueApplicationSet(appOld *argov1alpha1.Application, appNew *argov1alpha1.Application, enableProgressiveSyncs bool) bool {
 	if appOld == nil || appNew == nil {
 		return false
 	}
@@ -1573,7 +1573,7 @@ func shouldRequeueApplicationSet(appOld *argov1alpha1.Application, appNew *argov
 		return true
 	}
 
-	// progressive syncs use the application status for updates. if they differ, requeue to trigger the next progression
+	// We track the application status from the appset. If they differ, requeue to trigger the next progression
 	if appOld.Status.Health.Status != appNew.Status.Health.Status || appOld.Status.Sync.Status != appNew.Status.Sync.Status {
 		return true
 	}
