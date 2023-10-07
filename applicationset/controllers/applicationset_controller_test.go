@@ -5153,9 +5153,10 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 
 			appStatuses, err := r.updateApplicationSetApplicationStatus(context.TODO(), log.NewEntry(log.StandardLogger()), &cc.appSet, cc.apps, cc.appStepMap, statusMap)
 
-			// opt out of testing the LastTransitionTime is accurate
+			// opt out of testing the LastTransitionTime and CreatedAt are accurate
 			for app, status := range appStatuses {
 				status.ProgressiveSyncLastTransitionTime = nil
+				status.CreatedAt = nil
 				appStatuses[app] = status
 			}
 
