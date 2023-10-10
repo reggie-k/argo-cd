@@ -14,7 +14,7 @@ interface Progress {
 
 const RefreshTypes = ['normal', 'hard'];
 
-export const ApplicationsRefreshPanel = ({show, apps, hide}: {show: boolean; apps: models.Application[]; hide: () => void}) => {
+export const ApplicationsRefreshPanel = ({isAppSet, show, apps, hide}: {isAppSet: boolean, show: boolean; apps: models.Application[]; hide: () => void}) => {
     const [form, setForm] = React.useState<FormApi>(null);
     const [progress, setProgress] = React.useState<Progress>(null);
     const getSelectedApps = (params: any) => apps.filter((_, i) => params['app/' + i]);
@@ -50,7 +50,7 @@ export const ApplicationsRefreshPanel = ({show, apps, hide}: {show: boolean; app
                             const refreshActions = [];
                             for (const app of selectedApps) {
                                 const refreshAction = async () => {
-                                    await services.applications.get(app.metadata.name, app.metadata.namespace, params.refreshType).catch(e => {
+                                    await services.applications.get(!isAppSet, app.metadata.name, app.metadata.namespace, params.refreshType).catch(e => {
                                         ctx.notifications.show({
                                             content: <ErrorNotification title={`Unable to refresh ${app.metadata.name}`} e={e} />,
                                             type: NotificationType.Error

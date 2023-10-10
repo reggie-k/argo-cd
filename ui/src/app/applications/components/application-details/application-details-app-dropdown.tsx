@@ -4,7 +4,7 @@ import * as React from 'react';
 import {Context} from '../../../shared/context';
 import {services} from '../../../shared/services';
 
-export const ApplicationsDetailsAppDropdown = (props: {appName: string}) => {
+export const ApplicationsDetailsAppDropdown = (props: {isAppSet: boolean, appName: string}) => {
     const [opened, setOpened] = React.useState(false);
     const [appFilter, setAppFilter] = React.useState('');
     const ctx = React.useContext(Context);
@@ -34,7 +34,7 @@ export const ApplicationsDetailsAppDropdown = (props: {appName: string}) => {
                             }
                         />
                     </li>
-                    <DataLoader load={() => services.applications.list([], {fields: ['items.metadata.name']})}>
+                    <DataLoader load={() => services.applications.list(!props.isAppSet, [], {fields: ['items.metadata.name']})}>
                         {apps =>
                             apps.items
                                 .filter(app => {
