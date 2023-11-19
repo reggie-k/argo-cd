@@ -177,7 +177,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	appSyncMap := map[string]bool{}
 
 	if r.EnableProgressiveSyncs {
-		appSyncMap, err = r.performProgressiveSyncs(ctx, &applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
+		appSyncMap, err = r.performProgressiveSyncs(ctx, logCtx, &applicationSetInfo, currentApplications, desiredApplications, appMap, statusMap)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to perform progressive sync reconciliation for application set: %w", err)
 		}
@@ -198,7 +198,7 @@ func (r *ApplicationSetReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
-	err = r.setAppSetApplicationStatus(ctx, &applicationSetInfo, statusMap)
+	err = r.setAppSetApplicationStatus(ctx, logCtx, &applicationSetInfo, statusMap)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to set application set application status: %w", err)
 	}
@@ -914,7 +914,7 @@ func (r *ApplicationSetReconciler) removeOwnerReferencesOnDeleteAppSetProgressiv
 	return nil
 }
 
-func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, logCtx *log.Entry, appset argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, desiredApplications []argov1alpha1.Application, appMap map[string]argov1alpha1.Application) (map[string]bool, error) {
+func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, logCtx *log.Entry, appset *argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, desiredApplications []argov1alpha1.Application, appMap map[string]argov1alpha1.Application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]bool, error) {
 
 	appDependencyList, appStepMap, err := r.buildAppDependencyList(logCtx, appset, desiredApplications)
 	if err != nil {
@@ -926,7 +926,7 @@ func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, 
 		return nil, fmt.Errorf("failed to update applicationset app status: %w", err)
 	}
 
-	err = r.setAppSetApplicationStatus(ctx, appset, statusMap)
+	err = r.setAppSetApplicationStatus(ctx, logCtx, appset, statusMap)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update applicationset app status: %w", err)
 	}

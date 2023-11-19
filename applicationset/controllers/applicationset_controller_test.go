@@ -5150,7 +5150,6 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 			}
 
 			statusMap := r.getCurrentApplicationStatuses(&cc.appSet)
-
 			appStatuses, err := r.updateApplicationSetApplicationStatus(context.TODO(), log.NewEntry(log.StandardLogger()), &cc.appSet, cc.apps, cc.appStepMap, statusMap)
 
 			// opt out of testing the LastTransitionTime and CreatedAt are accurate
