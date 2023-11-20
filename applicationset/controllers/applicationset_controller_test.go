@@ -5134,7 +5134,7 @@ func TestUpdateApplicationSetApplicationStatus(t *testing.T) {
 			argoDBMock := dbmocks.ArgoDB{}
 			argoObjs := []runtime.Object{}
 
-			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(&cc.appSet).Build()
+			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(&cc.appSet).WithIndex(&v1alpha1.Application{}, ".metadata.controller", appControllerIndexer).Build()
 
 			r := ApplicationSetReconciler{
 				Client:           client,
@@ -5891,7 +5891,7 @@ func TestUpdateApplicationSetApplicationStatusProgress(t *testing.T) {
 			argoDBMock := dbmocks.ArgoDB{}
 			argoObjs := []runtime.Object{}
 
-			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(&cc.appSet).Build()
+			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(&cc.appSet).WithIndex(&v1alpha1.Application{}, ".metadata.controller", appControllerIndexer).Build()
 
 			r := ApplicationSetReconciler{
 				Client:           client,
@@ -6360,7 +6360,7 @@ func TestAppSetStatus(t *testing.T) {
 			argoDBMock := dbmocks.ArgoDB{}
 			argoObjs := []runtime.Object{&project}
 
-			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(initObjs...).Build()
+			client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(initObjs...).WithIndex(&v1alpha1.Application{}, ".metadata.controller", appControllerIndexer).Build()
 			r := ApplicationSetReconciler{
 				Client:   client,
 				Scheme:   scheme,
