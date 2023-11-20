@@ -1410,14 +1410,6 @@ func cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.Applica
 	}
 }
 
-func (r *ApplicationSetReconciler) cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus, appMap map[string]argov1alpha1.Application) {
-	for name := range statusMap {
-		if _, ok := appMap[name]; !ok {
-			delete(statusMap, name)
-		}
-	}
-}
-
 func (r *ApplicationSetReconciler) syncValidApplications(logCtx *log.Entry, applicationSet *argov1alpha1.ApplicationSet, appSyncMap map[string]bool, appMap map[string]argov1alpha1.Application, validApps []argov1alpha1.Application) ([]argov1alpha1.Application, error) {
 	rolloutApps := []argov1alpha1.Application{}
 	for i := range validApps {
