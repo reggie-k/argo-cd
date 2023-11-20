@@ -563,18 +563,6 @@ func appControllerIndexer(rawObj client.Object) []string {
 	if owner.APIVersion != argov1alpha1.SchemeGroupVersion.String() || owner.Kind != "ApplicationSet" {
 		return nil
 	}
-func (r *ApplicationSetReconciler) SetupWithManager(mgr ctrl.Manager, enableProgressiveSyncs bool, maxConcurrentReconciliations int) error {
-	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &argov1alpha1.Application{}, ".metadata.controller", func(rawObj client.Object) []string {
-		// grab the job object, extract the owner...
-		app := rawObj.(*argov1alpha1.Application)
-		owner := metav1.GetControllerOf(app)
-		if owner == nil {
-			return nil
-		}
-		// ...make sure it's a application set...
-		if owner.APIVersion != argov1alpha1.SchemeGroupVersion.String() || owner.Kind != "ApplicationSet" {
-			return nil
-		}
 
 	// ...and if so, return it
 	return []string{owner.Name}
@@ -897,8 +885,8 @@ func (r *ApplicationSetReconciler) removeFinalizerOnInvalidDestination(ctx conte
 	return nil
 }
 
-func (r *ApplicationSetReconciler) removeOwnerReferencesOnDeleteAppSetProgressiveSyncs(ctx context.Context, applicationSet argov1alpha1.ApplicationSet) error {
-	applications, err := r.getCurrentApplications(ctx, application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatusSet)
+func (r *ApplicationSetReconciler) removeOwnerReferencesOnDeleteAppSet(ctx context.Context, applicationSet argov1alpha1.ApplicationSet) error {
+	applications, err := r.getCurrentApplications(ctx, applicationSet)
 	if err != nil {
 		return err
 	}
@@ -916,7 +904,7 @@ func (r *ApplicationSetReconciler) removeOwnerReferencesOnDeleteAppSetProgressiv
 
 func (r *ApplicationSetReconciler) performProgressiveSyncs(ctx context.Context, logCtx *log.Entry, appset *argov1alpha1.ApplicationSet, applications []argov1alpha1.Application, desiredApplications []argov1alpha1.Application, appMap map[string]argov1alpha1.Application, statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus) (map[string]bool, error) {
 
-	appDependencyList, appStepMap, err := r.buildAppDependencyList(logCtx, appset, desiredApplications)
+	appDependencyList, appStepMap, err := r.buildAppDependencyList(logCtx, *appset, desiredApplications)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build app dependency list: %w", err)
 	}
@@ -1420,16 +1408,6 @@ func cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.Applica
 			delete(statusMap, name)
 		}
 	}
-}
-
-// setApplicationSetStatusCondition uses the data stored in the applicationset status
-// to create a map of applications and their statuses
-func (r *ApplicationSetReconciler) getCurrentApplicationStatuses(applicationSet *argov1alpha1.ApplicationSet) map[string]argov1alpha1.ApplicationSetApplicationStatus {
-	applicationStatuses := make(map[string]argov1alpha1.ApplicationSetApplicationStatus)
-	for _, app := range applicationSet.Status.ApplicationStatus {
-		applicationStatuses[app.Application] = app
-	}
-	return applicationStatuses
 }
 
 func (r *ApplicationSetReconciler) cleanupDeletedApplicationStatuses(statusMap map[string]argov1alpha1.ApplicationSetApplicationStatus, appMap map[string]argov1alpha1.Application) {
