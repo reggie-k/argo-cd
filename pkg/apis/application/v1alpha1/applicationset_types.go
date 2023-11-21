@@ -26,6 +26,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -823,14 +824,22 @@ const (
 type ApplicationSetApplicationStatus struct {
 	// Application contains the name of the Application resource
 	Application string `json:"application" protobuf:"bytes,1,opt,name=application"`
-	// LastTransitionTime is the time the status was last updated
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,2,opt,name=lastTransitionTime"`
-	// Message contains human-readable message indicating details about the status
-	Message string `json:"message" protobuf:"bytes,3,opt,name=message"`
-	// Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
-	Status string `json:"status" protobuf:"bytes,4,opt,name=status"`
-	// Step tracks which step this Application should be updated in
-	Step string `json:"step" protobuf:"bytes,5,opt,name=step"`
+	// ProgressiveSyncLastTransitionTime is the time the status was last updated
+	ProgressiveSyncLastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,2,opt,name=lastTransitionTime"`
+	// ProgressiveSyncMessage contains human-readable message indicating details about the status of the progressive sync
+	ProgressiveSyncMessage string `json:"message" protobuf:"bytes,3,opt,name=message"`
+	// ProgressiveSyncStatus contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
+	// this is NOT the same as the Application's status
+	ProgressiveSyncStatus string `json:"status" protobuf:"bytes,4,opt,name=status"`
+	// ProgressiveSyncStep tracks which step the Applications should be updated in
+	ProgressiveSyncStep string `json:"step" protobuf:"bytes,5,opt,name=step"`
+
+	// UID contains the UID of the application resource
+	UID types.UID `json:"uid" protobuf:"bytes,6,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
+	// CreatedAt contains the time the application was created
+	CreatedAt *metav1.Time `json:"createdAt,omitempty" protobuf:"bytes,7,opt,name=createdAt"`
+	// Health contains the health status of the application
+	Health HealthStatus `json:"health,omitempty" protobuf:"bytes,8,opt,name=health"`
 }
 
 // ApplicationSetList contains a list of ApplicationSet
@@ -840,6 +849,21 @@ type ApplicationSetList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	Items           []ApplicationSet `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// ApplicationSetTree holds nodes which belongs to the application
+// Used to build a tree of an ApplicationSet and its children
+type ApplicationSetTree struct {
+	// Nodes contains list of nodes which are directly managed by the applicationset
+	Nodes []ResourceNode `json:"nodes,omitempty" protobuf:"bytes,1,rep,name=nodes"`
+}
+
+// Normalize sorts applicationset tree nodes. The persistent order allows to
+// effectively compare previously cached app tree and allows to unnecessary Redis requests.
+func (t *ApplicationSetTree) Normalize() {
+	sort.Slice(t.Nodes, func(i, j int) bool {
+		return t.Nodes[i].FullName() < t.Nodes[j].FullName()
+	})
 }
 
 // func init() {

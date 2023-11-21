@@ -182,17 +182,27 @@ message ApplicationSetApplicationStatus {
   // Application contains the name of the Application resource
   optional string application = 1;
 
-  // LastTransitionTime is the time the status was last updated
+  // ProgressiveSyncLastTransitionTime is the time the status was last updated
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 2;
 
-  // Message contains human-readable message indicating details about the status
+  // ProgressiveSyncMessage contains human-readable message indicating details about the status of the progressive sync
   optional string message = 3;
 
-  // Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
+  // ProgressiveSyncStatus contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)
+  // this is NOT the same as the Application's status
   optional string status = 4;
 
-  // Step tracks which step this Application should be updated in
+  // ProgressiveSyncStep tracks which step the Applications should be updated in
   optional string step = 5;
+
+  // UID contains the UID of the application resource
+  optional string uid = 6;
+
+  // CreatedAt contains the time the application was created
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time createdAt = 7;
+
+  // Health contains the health status of the application
+  optional HealthStatus health = 8;
 }
 
 // ApplicationSetCondition contains details about an applicationset condition, which is usally an error or warning
@@ -388,6 +398,13 @@ message ApplicationSetTerminalGenerator {
 
   // Selector allows to post-filter all generator.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.LabelSelector selector = 8;
+}
+
+// ApplicationSetTree holds nodes which belongs to the application
+// Used to build a tree of an ApplicationSet and its children
+message ApplicationSetTree {
+  // Nodes contains list of nodes which are directly managed by the applicationset
+  repeated ResourceNode nodes = 1;
 }
 
 // ApplicationSource contains all required information about the source of an application

@@ -15194,6 +15194,16 @@ spec:
                   properties:
                     application:
                       type: string
+                    createdAt:
+                      format: date-time
+                      type: string
+                    health:
+                      properties:
+                        message:
+                          type: string
+                        status:
+                          type: string
+                      type: object
                     lastTransitionTime:
                       format: date-time
                       type: string
@@ -15203,11 +15213,14 @@ spec:
                       type: string
                     step:
                       type: string
+                    uid:
+                      type: string
                   required:
                   - application
                   - message
                   - status
                   - step
+                  - uid
                   type: object
                 type: array
               conditions:

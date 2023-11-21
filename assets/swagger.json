@@ -2011,6 +2011,43 @@
         }
       }
     },
+    "/api/v1/applicationsets/{name}/resource-tree": {
+      "get": {
+        "tags": [
+          "ApplicationSetService"
+        ],
+        "summary": "ResourceTree returns resource tree",
+        "operationId": "ApplicationSetService_ResourceTree",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "The application set namespace. Default empty is argocd control plane namespace.",
+            "name": "appsetNamespace",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1alpha1ApplicationSetTree"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
+            }
+          }
+        }
+      }
+    },
     "/api/v1/certificates": {
       "get": {
         "tags": [
@@ -5925,20 +5962,30 @@
           "type": "string",
           "title": "Application contains the name of the Application resource"
         },
+        "createdAt": {
+          "$ref": "#/definitions/v1Time"
+        },
+        "health": {
+          "$ref": "#/definitions/v1alpha1HealthStatus"
+        },
         "lastTransitionTime": {
           "$ref": "#/definitions/v1Time"
         },
         "message": {
           "type": "string",
-          "title": "Message contains human-readable message indicating details about the status"
+          "title": "ProgressiveSyncMessage contains human-readable message indicating details about the status of the progressive sync"
         },
         "status": {
           "type": "string",
-          "title": "Status contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)"
+          "title": "ProgressiveSyncStatus contains the AppSet's perceived status of the managed Application resource: (Waiting, Pending, Progressing, Healthy)\nthis is NOT the same as the Application's status"
         },
         "step": {
           "type": "string",
-          "title": "Step tracks which step this Application should be updated in"
+          "title": "ProgressiveSyncStep tracks which step the Applications should be updated in"
+        },
+        "uid": {
+          "type": "string",
+          "title": "UID contains the UID of the application resource"
         }
       }
     },
@@ -6230,6 +6277,19 @@
         },
         "namespace": {
           "type": "string"
+        }
+      }
+    },
+    "v1alpha1ApplicationSetTree": {
+      "type": "object",
+      "title": "ApplicationSetTree holds nodes which belongs to the application\nUsed to build a tree of an ApplicationSet and its children",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "title": "Nodes contains list of nodes which are directly managed by the applicationset",
+          "items": {
+            "$ref": "#/definitions/v1alpha1ResourceNode"
+          }
         }
       }
     },
