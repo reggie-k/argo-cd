@@ -6,6 +6,7 @@ import * as models from '../models';
 import { isValidURL } from '../utils';
 import requests from './requests';
 import { getRootPath, isInvokedFromApps } from '../../applications/components/utils';
+import { debug } from 'console';
 
 interface QueryOptions {
     fields: string[];
@@ -87,11 +88,12 @@ export class ApplicationsService {
             .then(res => res.body as models.ChartDetails);
     }
 
-    public resourceTree(name: string, appNamespace: string): Promise<models.ApplicationTree> {
+    public resourceTree(name: string, appNamespace: string): Promise<models.AbstractApplicationTree> {
+        console.log("***  RESOURCE TREE ****")
         return requests
             .get(`${getRootPath()}/${name}/resource-tree`)
             .query({ appNamespace })
-            .then(res => res.body as models.ApplicationTree);
+            .then(isInvokedFromApps() ? res => res.body as models.ApplicationTree: res => res.body as models.ApplicationSetTree);
     }
 
     public watchResourceTree(name: string, appNamespace: string): Observable<models.ApplicationTree> {

@@ -349,10 +349,16 @@ export interface ApplicationSetCondition {
 
 export interface ApplicationSetApplicationStatus {
     application: string;
-    message: string;
-    lastTransitionTime: models.Time;
-    status: string;
-    step: string;
+    progressiveSyncLastTransitionTime: models.Time;
+	progressiveSyncMessage: string;
+    progressiveSyncStatus: string;
+    progressiveSyncStep: string;
+    createdAt: models.Time;
+    health: HealthStatus;
+    // message: string;
+    // lastTransitionTime: models.Time;
+    // status: string;
+    // step: string;
 }
 
 export type ApplicationSetConditionType = 'ErrorOccurred' | 'ParametersGenerated' | 'ResourcesUpToDate' | 'RolloutProgressing';
@@ -453,10 +459,16 @@ export interface ResourceNode extends ResourceRef {
     createdAt?: models.Time;
 }
 
-export interface ApplicationTree {
+export interface AbstractApplicationTree {
     nodes: ResourceNode[];
+}
+
+export interface ApplicationTree extends AbstractApplicationTree{
     orphanedNodes: ResourceNode[];
     hosts: Node[];
+}
+
+export interface ApplicationSetTree extends AbstractApplicationTree{
 }
 
 export interface ResourceID {

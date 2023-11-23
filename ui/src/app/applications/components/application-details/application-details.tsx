@@ -25,7 +25,7 @@ import * as AppUtils from '../utils';
 import { ApplicationResourceList } from './application-resource-list';
 import { AbstractFiltersProps, Filters } from './application-resource-filter';
 import { getAppDefaultSource, urlPattern, helpTip, isApp, isInvokedFromApps } from '../utils';
-import { ChartDetails, ResourceStatus } from '../../../shared/models';
+import { ApplicationTree, ChartDetails, ResourceStatus } from '../../../shared/models';
 import { ApplicationsDetailsAppDropdown } from './application-details-app-dropdown';
 import { useSidebarTarget } from '../../../sidebar/sidebar';
 
@@ -229,7 +229,7 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                 })
                             )
                         }>
-                        {({ application, tree, pref }: { application: appModels.AbstractApplication; tree: appModels.ApplicationTree; pref: AbstractAppDetailsPreferences }) => {
+                        {({ application, tree, pref }: { application: appModels.AbstractApplication; tree: appModels.AbstractApplicationTree; pref: AbstractAppDetailsPreferences }) => {
                             tree.nodes = tree.nodes || [];
                             const treeFilter = this.getTreeFilter(pref.resourceFilter);
                             const setFilter = (items: string[]) => {
@@ -256,7 +256,7 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                 const resources = new Map<string, any>();
                                 tree.nodes
                                     .map(node => ({ ...node, orphaned: false }))
-                                    .concat(((pref.orphanedResources && tree.orphanedNodes) || []).map(node => ({ ...node, orphaned: true })))
+                                    .concat(((pref.orphanedResources && isApp(application) ? (tree as models.ApplicationTree).orphanedNodes : []) || []).map(node => ({ ...node, orphaned: true })))
                                     .forEach(node => {
                                         const resource: any = { ...node };
                                         resource.uid = node.uid;
@@ -335,7 +335,7 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                 const nodes = new Array<ResourceTreeNode>();
                                 tree.nodes
                                     .map(node => ({ ...node, orphaned: false }))
-                                    .concat((tree.orphanedNodes || []).map(node => ({ ...node, orphaned: true })))
+                                    .concat((isApp(application) ? (tree as models.ApplicationTree).orphanedNodes : [] || []).map(node => ({ ...node, orphaned: true })))
                                     .forEach(node => {
                                         const resourceNode: ResourceTreeNode = { ...node };
                                         nodes.push(resourceNode);
@@ -513,7 +513,7 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                                             selectedNodeFullName={this.selectedNodeKey}
                                                             onNodeClick={fullName => this.selectNode(fullName)}
                                                             nodeMenu={node =>
-                                                                AppUtils.renderResourceMenu(node, application, tree, this.appContext.apis, this.appChanged, () =>
+                                                                AppUtils.renderResourceMenu(node, application, tree as ApplicationTree, this.appContext.apis, this.appChanged, () =>
                                                                     this.getApplicationActionMenu(application, false)
                                                                 )
                                                             }
@@ -540,19 +540,19 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                                 )) ||
                                                     (pref.view === 'pods' && (
                                                         <PodView
-                                                            tree={tree}
+                                                            tree={tree as ApplicationTree}
                                                             app={application}
                                                             onItemClick={fullName => this.selectNode(fullName)}
                                                             nodeMenu={node =>
-                                                                AppUtils.renderResourceMenu(node, application, tree, this.appContext.apis, this.appChanged, () =>
+                                                                AppUtils.renderResourceMenu(node, application, tree as ApplicationTree, this.appContext.apis, this.appChanged, () =>
                                                                     this.getApplicationActionMenu(application, false)
                                                                 )
                                                             }
-                                                            quickStarts={node => AppUtils.renderResourceButtons(node, application, tree, this.appContext.apis, this.appChanged)}
+                                                            quickStarts={node => AppUtils.renderResourceButtons(node, application, tree as ApplicationTree, this.appContext.apis, this.appChanged)}
                                                         />
                                                     )) ||
                                                     (this.state.extensionsMap[pref.view] != null && (
-                                                        <ExtensionView extension={this.state.extensionsMap[pref.view]} application={application} tree={tree} />
+                                                        <ExtensionView extension={this.state.extensionsMap[pref.view]} application={application} tree={tree as ApplicationTree} />
                                                     )) || (
                                                         <div>
                                                             <DataLoader load={() => services.viewPreferences.getPreferences()}>
@@ -581,13 +581,13 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                                                                 AppUtils.renderResourceMenu(
                                                                                     {...node, root: node},
                                                                                     application,
-                                                                                    tree,
+                                                                                    tree as ApplicationTree,
                                                                                     this.appContext.apis,
                                                                                     this.appChanged,
                                                                                     () => this.getApplicationActionMenu(application, false)
                                                                                 )
                                                                             }
-                                                                            tree={tree}
+                                                                            tree={tree as ApplicationTree}
                                                                         />
                                                                     )}
                                                                 </Paginate>
@@ -613,11 +613,11 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                                             onNodeClick={fullName => this.selectNode(fullName)}
                                                             resources={data}
                                                             nodeMenu={node =>
-                                                                AppUtils.renderResourceMenu({ ...node, root: node }, application, tree, this.appContext.apis, this.appChanged, () =>
+                                                                AppUtils.renderResourceMenu({ ...node, root: node }, application, tree as ApplicationTree, this.appContext.apis, this.appChanged, () =>
                                                                     this.getApplicationActionMenu(application, false)
                                                                 )
                                                             }
-                                                            tree={tree}
+                                                            tree={tree as ApplicationTree}
                                                         />
                                                     )}
                                                 </Paginate>
@@ -625,7 +625,7 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
                                         </SlidingPanel>
                                         <SlidingPanel isShown={selectedNode != null || isAppSelected} onClose={() => this.selectNode('')}>
                                             <ResourceDetails
-                                                tree={tree}
+                                                tree={tree as ApplicationTree}
                                                 application={application}
                                                 isAppSelected={isAppSelected}
                                                 updateApp={(app: models.Application, query: { validate?: boolean }) => this.updateApp(app, query)}
@@ -884,15 +884,16 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
         return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    private loadAppInfo(name: string, appNamespace: string): Observable<{ application: appModels.AbstractApplication; tree: appModels.ApplicationTree }> {
+    private loadAppInfo(name: string, appNamespace: string): Observable<{ application: appModels.AbstractApplication; tree: appModels.AbstractApplicationTree }> {
         return from(services.applications.get(name, appNamespace))
             .pipe(
                 mergeMap(app => {
                     const fallbackTree = {
                         nodes: isApp(app) ? (app as models.Application).status.resources.map(res => ({ ...res, parentRefs: [], info: [], resourceVersion: '', uid: '' })) : [],
+                        // (app as models.ApplicationSet).status.resources.map(res => ({ ...res, parentRefs: [], info: [], resourceVersion: '', uid: '' })),
                         orphanedNodes: [],
                         hosts: []
-                    } as appModels.ApplicationTree;
+                    } as appModels.AbstractApplicationTree;
                     return combineLatest(
                         merge(
                             from([app]),
@@ -943,9 +944,10 @@ export class ApplicationDetails extends React.Component<RouteComponentProps<{ ap
         this.appChanged.next(updatedApp);
     }
 
-    private groupAppNodesByKey(application: appModels.Application, tree: appModels.ApplicationTree) {
-        const nodeByKey = new Map<string, appModels.ResourceDiff | appModels.ResourceNode | appModels.Application>();
-        tree.nodes.concat(tree.orphanedNodes || []).forEach(node => nodeByKey.set(AppUtils.nodeKey(node), node));
+    private groupAppNodesByKey(application: appModels.AbstractApplication, tree: appModels.AbstractApplicationTree) {
+        const nodeByKey = new Map<string, appModels.ResourceDiff | appModels.ResourceNode | appModels.AbstractApplication>();
+        console.log(tree.nodes.length)
+        tree.nodes.concat((isApp(application)? (tree as appModels.ApplicationTree).orphanedNodes : []) || []).forEach(node => nodeByKey.set(AppUtils.nodeKey(node), node));
         nodeByKey.set(AppUtils.nodeKey({ group: 'argoproj.io', kind: application.kind, name: application.metadata.name, namespace: application.metadata.namespace }), application);
         return nodeByKey;
     }
