@@ -7,8 +7,9 @@ const extensions = {
     resourceExtentions: new Array<ResourceTabExtension>(),
     // appSetResourceExtentions: new Array<AppSetResourceTabExtension>(),
     systemLevelExtensions: new Array<SystemLevelExtension>(),
-    appViewExtensions: new Array<AppViewExtension>()
-    // appSetViewExtensions: new Array<AppSetViewExtension>()
+    appViewExtensions: new Array<AppViewExtension>(),
+    // appSetViewExtensions: new Array<AppSetViewExtension>(),
+    statusPanelExtensions: new Array<StatusPanelExtension>()
 };
 
 function registerResourceExtension(component: ExtensionComponent, group: string, kind: string, tabTitle: string, opts?: {icon: string}) {
@@ -26,6 +27,10 @@ function registerAppViewExtension(component: ExtensionComponent, title: string, 
 // function registerAppSetViewExtension(component: AppSetExtensionComponent, title: string, icon: string) {
 //     extensions.appSetViewExtensions.push({component, title, icon});
 // }
+
+function registerStatusPanelExtension(component: StatusPanelExtensionComponent, title: string, id: string, flyout?: ExtensionComponent) {
+    extensions.statusPanelExtensions.push({component, flyout, title, id});
+}
 
 let legacyInitialized = false;
 
@@ -75,11 +80,21 @@ export interface AppViewExtension {
 //     title: string;
 //     icon?: string;
 // }
+
+export interface StatusPanelExtension {
+    component: StatusPanelExtensionComponent;
+    flyout?: StatusPanelExtensionFlyoutComponent;
+    title: string;
+    id: string;
+}
+
 export type ExtensionComponent = React.ComponentType<AbstractExtensionComponentProps>;
 // export type AppSetExtensionComponent = React.ComponentType<AppSetExtensionComponentProps>;
 export type SystemExtensionComponent = React.ComponentType;
 export type AppViewExtensionComponent = React.ComponentType<AbstractViewComponentProps>;
 // export type AppSetViewExtensionComponent = React.ComponentType<AppSetViewComponentProps>;
+export type StatusPanelExtensionComponent = React.ComponentType<StatusPanelComponentProps>;
+export type StatusPanelExtensionFlyoutComponent = React.ComponentType<StatusPanelFlyoutProps>;
 
 export interface Extension {
     component: ExtensionComponent;
@@ -116,6 +131,16 @@ export interface AppSetViewComponentProps {
     application: ApplicationSet;
 }
 
+export interface StatusPanelComponentProps {
+    application: Application;
+    openFlyout: () => any;
+}
+
+export interface StatusPanelFlyoutProps {
+    application: ApplicationSet | Application;
+    tree: ApplicationTree;
+}
+
 export class ExtensionsService {
     public getResourceTabs(group: string, kind: string): ResourceTabExtension[] {
         initLegacyExtensions();
@@ -140,6 +165,10 @@ export class ExtensionsService {
     // public getAppSetViewExtensions(): AppSetViewExtension[] {
     //     return extensions.appSetViewExtensions.slice();
     // }
+
+    public getStatusPanelExtensions(): StatusPanelExtension[] {
+        return extensions.statusPanelExtensions.slice();
+    }
 }
 
 ((window: any) => {
@@ -166,6 +195,10 @@ export class AppSetExtensionsService {
     public getAppViewExtensions(): AppViewExtension[] {
         return extensions.appViewExtensions.slice();
     }
+
+    public getStatusPanelExtensions(): StatusPanelExtension[] {
+        return extensions.statusPanelExtensions.slice();
+    }
 }
 
 ((window: any) => {
@@ -174,6 +207,7 @@ export class AppSetExtensionsService {
     window.extensionsAPI = {
         registerResourceExtension,
         registerSystemLevelExtension,
-        registerAppViewExtension
+        registerAppViewExtension,
+        registerStatusPanelExtension
     };
 })(window);

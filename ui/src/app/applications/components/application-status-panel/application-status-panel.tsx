@@ -16,6 +16,7 @@ interface Props {
     showDiff?: () => any;
     showOperation?: () => any;
     showConditions?: () => any;
+    showExtension?: (id: string) => any;
     showMetadataInfo?: (revision: string) => any;
 }
 
@@ -45,7 +46,7 @@ const sectionHeader = (info: SectionInfo, hasMultipleSources: boolean, onClick?:
     );
 };
 
-export const ApplicationStatusPanel = ({application, showDiff, showOperation, showConditions, showMetadataInfo}: Props) => {
+export const ApplicationStatusPanel = ({application, showDiff, showOperation, showConditions, showExtension, showMetadataInfo}: Props) => {
     let cntByCategory;
     let hasMultipleSources;
     let source;
@@ -76,6 +77,8 @@ export const ApplicationStatusPanel = ({application, showDiff, showOperation, sh
             new Map<string, number>()
         );
     }
+
+    const statusExtensions = services.extensions.getStatusPanelExtensions();
 
     const infos = cntByCategory.get('info');
     const warnings = cntByCategory.get('warning');
@@ -238,6 +241,7 @@ export const ApplicationStatusPanel = ({application, showDiff, showOperation, sh
                     )}
                 </DataLoader>
             )}
+            {statusExtensions && statusExtensions.map(ext => <ext.component key={ext.title} application={application} openFlyout={() => showExtension && showExtension(ext.id)} />)}
         </div>
     );
 };
