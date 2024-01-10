@@ -558,8 +558,8 @@ export class ApplicationsService {
                 data
             );
             /* REMOVE ME WHEN FIXED ON BACKEND SIDE*/
-            (data as models.ApplicationSet).status.resources[0].kind = 'Application';
-            (data as models.ApplicationSet).status.resources[0].group = 'argoproj.io';
+            // (data as models.ApplicationSet).status.resources[0].kind = 'Application';
+            // (data as models.ApplicationSet).status.resources[0].group = 'argoproj.io';
             return data as models.ApplicationSet;
         }
     }
