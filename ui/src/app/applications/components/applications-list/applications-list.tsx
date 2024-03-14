@@ -264,7 +264,7 @@ const SearchBar = (props: {
     const [isFocused, setFocus] = React.useState(false);
     const useAuthSettingsCtx = React.useContext(AuthSettingsCtx);
 
-    const placeholderText = props.objectListKind == 'application' ? 'Search applications...' : 'Search application sets...';
+    const placeholderText = props.objectListKind === 'application' ? 'Search applications...' : 'Search application sets...';
 
     useKeybinding({
         keys: Key.SLASH,
@@ -452,7 +452,7 @@ export const ApplicationsList = (props: RouteComponentPropsExtended) => {
 
             refreshApplication: refreshApp,
             deleteApplication: (appName, appNamespace) => AppUtils.deleteApplication(appName, appNamespace, listCtx),
-            objectListKind: objectListKind
+            objectListKind: '{objectListKind}'
         };
     };
 
@@ -460,7 +460,7 @@ export const ApplicationsList = (props: RouteComponentPropsExtended) => {
         return {
             applications: data,
             deleteApplication: (appName, appNamespace) => AppUtils.deleteApplication(appName, appNamespace, listCtx),
-            objectListKind: objectListKind
+            objectListKind: '{objectListKind}'
         };
     };
 
