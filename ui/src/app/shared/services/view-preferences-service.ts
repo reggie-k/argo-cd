@@ -2,7 +2,6 @@ import * as deepMerge from 'deepmerge';
 import {BehaviorSubject, Observable} from 'rxjs';
 
 import {PodGroupType} from '../../applications/components/application-pod-view/pod-view';
-import {isInvokedFromApps} from '../../applications/components/utils';
 import {UserMessages} from '../models';
 
 export type AppsDetailsViewType = 'tree' | 'network' | 'list' | 'pods';
@@ -154,7 +153,13 @@ const VIEW_PREFERENCES_KEY = 'view_preferences';
 
 const minVer = 5;
 
-const DEFAULT_PREFERENCES: ViewPreferences | AppSetViewPreferences = isInvokedFromApps()
+// Default view preferences for apps and for appsets should probably differ, and while constructing them,
+// it should allegedly be clear what they are used for (apps or appsets)
+// In reality, I didn't see any behavior difference for initializing the default preferences with any of them.
+// So this is here to indicate that if a use case, in which the behaviour WOULD be different, would be found,
+// isForApps would need to be calculated and then the separation is already in place.
+const isForApps = true;
+const DEFAULT_PREFERENCES: ViewPreferences | AppSetViewPreferences = isForApps
     ? {
           version: 1,
           appDetails: {

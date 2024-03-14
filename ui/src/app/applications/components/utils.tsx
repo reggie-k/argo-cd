@@ -1299,12 +1299,6 @@ export function isApp(abstractApp: appModels.AbstractApplication): abstractApp i
     return abstractApp.kind === 'Application';
 }
 
-// Currently used for view-preferences-service only.
-// TODO: GET RID OF IT (by finding an elegant solution for loading the relevant prefs by using location.pathname).
-export function isInvokedFromApps(): boolean {
-    return true;
-}
-
 export function isInvokedFromAppsPath(pathname: string): boolean {
     return pathname.includes('applicationsets') ? false : true;
 }
