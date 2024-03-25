@@ -450,7 +450,7 @@ export const ApplicationsList = (props: RouteComponentPropsExtended) => {
             applications: data,
             syncApplication: (appName, appNamespace) => listCtx.navigation.goto('.', {syncApp: appName, appNamespace}, {replace: true}),
 
-            refreshApplication: refreshApp,
+            // refreshApplication: refreshApp,
             deleteApplication: (appName, appNamespace) => AppUtils.deleteApplication(appName, appNamespace, listCtx),
             objectListKind: '{objectListKind}'
         };
