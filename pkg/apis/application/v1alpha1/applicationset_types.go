@@ -27,6 +27,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 // Utility struct for a reference to a secret key.
@@ -260,6 +261,7 @@ func (g ApplicationSetTerminalGenerators) toApplicationSetNestedGenerators() []A
 
 // ListGenerator include items info
 type ListGenerator struct {
+	// +kubebuilder:validation:Optional
 	Elements     []apiextensionsv1.JSON `json:"elements" protobuf:"bytes,1,name=elements"`
 	Template     ApplicationSetTemplate `json:"template,omitempty" protobuf:"bytes,2,name=template"`
 	ElementsYaml string                 `json:"elementsYaml,omitempty" protobuf:"bytes,3,opt,name=elementsYaml"`
@@ -832,6 +834,18 @@ type ApplicationSetApplicationStatus struct {
 	Status string `json:"status" protobuf:"bytes,4,opt,name=status"`
 	// Step tracks which step this Application should be updated in
 	Step string `json:"step" protobuf:"bytes,5,opt,name=step"`
+}
+
+// ApplicationSetWatchEvent contains information about applicationset change.
+type ApplicationSetWatchEvent struct {
+	Type watch.EventType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=k8s.io/apimachinery/pkg/watch.EventType"`
+
+	// ApplicationSet is:
+	//  * If Type is Added or Modified: the new state of the object.
+	//  * If Type is Deleted: the state of the object immediately before deletion.
+	//  * If Type is Error: *api.Status is recommended; other types may make sense
+	//    depending on context.
+	ApplicationSet ApplicationSet `json:"applicationSet" protobuf:"bytes,2,opt,name=applicationSet"`
 }
 
 // ApplicationSetList contains a list of ApplicationSet

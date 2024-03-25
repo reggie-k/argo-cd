@@ -333,10 +333,15 @@ export const deletePopup = async (
     ctx: ContextApis,
     history: History<unknown>,
     resource: ResourceTreeNode,
-    application: appModels.AbstractApplication,
-    appChanged?: BehaviorSubject<appModels.AbstractApplication>
+    application: appModels.Application,
+    appChanged?: BehaviorSubject<appModels.Application>
 ) => {
-    const isManaged = !!resource.status;
+    function isTopLevelResource(res: ResourceTreeNode, app: appModels.Application): boolean {
+        const uniqRes = `/${res.namespace}/${res.group}/${res.kind}/${res.name}`;
+        return app.status.resources.some(resStatus => `/${resStatus.namespace}/${resStatus.group}/${resStatus.kind}/${resStatus.name}` === uniqRes);
+    }
+
+    const isManaged = isTopLevelResource(resource, application);
     const deleteOptions = {
         option: 'foreground'
     };
