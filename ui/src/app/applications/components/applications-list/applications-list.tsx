@@ -452,7 +452,7 @@ export const ApplicationsList = (props: RouteComponentPropsExtended) => {
 
             refreshApplication: refreshApp,
             deleteApplication: (appName, appNamespace) => AppUtils.deleteApplication(appName, appNamespace, listCtx),
-            objectListKind: '{objectListKind}'
+            objectListKind
         };
     };
 
@@ -460,7 +460,7 @@ export const ApplicationsList = (props: RouteComponentPropsExtended) => {
         return {
             applications: data,
             deleteApplication: (appName, appNamespace) => AppUtils.deleteApplication(appName, appNamespace, listCtx),
-            objectListKind: '{objectListKind}'
+            objectListKind
         };
     };
 
