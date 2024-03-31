@@ -405,10 +405,10 @@ export class ApplicationsService {
             .then(() => true);
     }
 
-    public events(applicationName: string, appNamespace: string): Promise<models.Event[]> {
+    public events(applicationName: string, appNamespace: string, pathname: string): Promise<models.Event[]> {
         // let isFromApps = isInvokedFromApps();
         return requests
-            .get(`/applications/${applicationName}/events`)
+            .get(`${getRootPathByPath(pathname)}/${applicationName}/events`)
             .query({appNamespace})
             .send()
             .then(res => (res.body as models.EventList).items || []);
