@@ -95,12 +95,22 @@ export class ApplicationsService {
     }
 
     public resourceTree(name: string, appNamespace: string, pathname: string): Promise<models.AbstractApplicationTree> {
-        return requests
-            .get(`${getRootPathByPath(pathname)}/${name}/resource-tree`)
-            .query({appNamespace})
-            .then(res => res.body as models.AbstractApplicationTree);
+        console.log('resourceTree');
+        if (!isInvokedFromAppsPath(pathname)) {
+            const jsonString =
+                '{"nodes":[{"group":"argoproj.io","version":"v1alpha1","kind":"Application","namespace":"argocd","name":"in-cluster-test","parentRefs":[{"group":"argoproj.io","version":"v1alpha1","kind":"ApplicationSet","namespace":"argocd","name":"test","uid":"5ef0ab53-1436-4839-9cd3-cf963304ee77"}],"health":{"status":"Healthy"}}]}';
+            return Promise.resolve(JSON.parse(jsonString) as models.AbstractApplicationTree);
+        } else {
+            return requests
+                .get(`${getRootPathByPath(pathname)}/${name}/resource-tree`)
+                .query({appNamespace})
+                .then(res => {
+                    const jsonString = JSON.stringify(res.body); // Convert res.body to JSON string
+                    console.log(jsonString); // Print the JSON string
+                    return JSON.parse(jsonString) as models.AbstractApplicationTree;
+                });
+        }
     }
-
     public watchResourceTree(name: string, appNamespace: string, pathname: string): Observable<models.ApplicationTree> {
         return requests
             .loadEventSource(`/stream${getRootPathByPath(pathname)}/${name}/resource-tree?appNamespace=${appNamespace}`)
