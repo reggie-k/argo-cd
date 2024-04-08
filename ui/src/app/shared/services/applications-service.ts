@@ -95,6 +95,7 @@ export class ApplicationsService {
     }
 
     public resourceTree(name: string, appNamespace: string, pathname: string): Promise<models.AbstractApplicationTree> {
+        console.log('resourceTree');
         return requests
             .get(`${getRootPathByPath(pathname)}/${name}/resource-tree`)
             .query({appNamespace})
@@ -557,10 +558,11 @@ export class ApplicationsService {
                 },
                 data
             );
-            /* REMOVE ME WHEN FIXED ON BACKEND SIDE
-            (data as models.ApplicationSet).status.resources[0].kind = 'Application';
+            //  REMOVE ME WHEN FIXED ON BACKEND SIDE
+            /*  (data as models.ApplicationSet).status.resources[0].kind = 'Application';
             (data as models.ApplicationSet).status.resources[0].group = 'argoproj.io';
             */
+
             return data as models.ApplicationSet;
         }
     }
