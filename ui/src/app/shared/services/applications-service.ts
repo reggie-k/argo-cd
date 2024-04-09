@@ -95,7 +95,7 @@ export class ApplicationsService {
     }
 
     public resourceTree(name: string, appNamespace: string, pathname: string): Promise<models.AbstractApplicationTree> {
-        console.log('resourceTree');
+        // console.log('resourceTree');
         if (!isInvokedFromAppsPath(pathname)) {
             const jsonString =
                 '{"nodes":[{"group":"argoproj.io","version":"v1alpha1","kind":"Application","namespace":"argocd","name":"in-cluster-test","parentRefs":[{"group":"argoproj.io","version":"v1alpha1","kind":"ApplicationSet","namespace":"argocd","name":"test","uid":"5ef0ab53-1436-4839-9cd3-cf963304ee77"}],"health":{"status":"Healthy"}}]}';
@@ -106,7 +106,7 @@ export class ApplicationsService {
                 .query({appNamespace})
                 .then(res => {
                     const jsonString = JSON.stringify(res.body); // Convert res.body to JSON string
-                    console.log(jsonString); // Print the JSON string
+                    // console.log(jsonString); // Print the JSON string
                     return JSON.parse(jsonString) as models.AbstractApplicationTree;
                 });
         }
