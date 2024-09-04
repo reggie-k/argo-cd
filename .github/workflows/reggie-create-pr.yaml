@@ -11,9 +11,7 @@ on:
         description: 'TARGET_VERSION to build manifests (e.g. 2.5.0-rc1) Note: the `v` prefix is not used'
         required: true
         type: string
-  push:
-    branches:
-      - 'test-create-pull-request-bump'
+
 
 permissions: {}
 
