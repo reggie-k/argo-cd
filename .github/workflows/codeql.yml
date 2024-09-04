@@ -6,6 +6,7 @@ on:
     branches-ignore:
       - 'dependabot/**'
       - 'cherry-pick-*'
+      - 'test-create-pull-request-bump'
   pull_request:
   schedule:
     - cron: '0 19 * * 0'

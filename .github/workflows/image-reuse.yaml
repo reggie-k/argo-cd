@@ -1,5 +1,8 @@
 name: Publish and Sign Container Image
 on:
+  push:
+    branches-ignore:
+      - 'test-create-pull-request-bump'
   workflow_call:
     inputs:
       go-version:

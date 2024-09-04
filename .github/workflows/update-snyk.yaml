@@ -1,5 +1,8 @@
 name: Snyk report update
 on:
+  push:
+    branches-ignore:
+      - 'test-create-pull-request-bump'
   workflow_dispatch: {}
   schedule:
     - cron: '0 0 * * 0' # midnight every Sunday
