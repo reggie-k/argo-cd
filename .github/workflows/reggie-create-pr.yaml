@@ -1,5 +1,16 @@
 name: Create PR
 on:
+  workflow_dispatch:
+    inputs:
+      TARGET_BRANCH:
+        description: 'TARGET_BRANCH to checkout (e.g. release-2.5)'
+        required: true
+        type: string
+
+      TARGET_VERSION:
+        description: 'TARGET_VERSION to build manifests (e.g. 2.5.0-rc1) Note: the `v` prefix is not used'
+        required: true
+        type: string
   push:
     branches:
       - 'test-create-pull-request-bump'
