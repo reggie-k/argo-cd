@@ -220,9 +220,8 @@ func init() {
 	if err != nil {
 		if stderrors.Is(err, os.ErrNotExist) {
 			return
-		} else {
-			panic(fmt.Sprintf("Could not read record file %s: %v", rf, err))
 		}
+		panic(fmt.Sprintf("Could not read record file %s: %v", rf, err))
 	}
 	defer func() {
 		err := f.Close()
@@ -1115,7 +1114,7 @@ func AddTag(name string) {
 }
 
 // create the resource by creating using "kubectl apply", with bonus templating
-func Declarative(filename string, values interface{}) (string, error) {
+func Declarative(filename string, values any) (string, error) {
 	bytes, err := os.ReadFile(path.Join("testdata", filename))
 	CheckError(err)
 
@@ -1220,9 +1219,8 @@ func RestartAPIServer() {
 func LocalOrRemotePath(base string) string {
 	if IsRemote() {
 		return base + "/remote"
-	} else {
-		return base + "/local"
 	}
+	return base + "/local"
 }
 
 // SkipOnEnv allows to skip a test when a given environment variable is set.

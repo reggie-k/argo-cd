@@ -10,7 +10,7 @@ import (
 	"github.com/argoproj/argo-cd/v2/util/db"
 
 	"github.com/argoproj/pkg/sync"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -79,7 +79,7 @@ func TestProjectServer(t *testing.T) {
 
 	ctx := context.Background()
 	fakeAppsClientset := apps.NewSimpleClientset()
-	factory := informer.NewSharedInformerFactoryWithOptions(fakeAppsClientset, 0, informer.WithNamespace(""), informer.WithTweakListOptions(func(options *metav1.ListOptions) {}))
+	factory := informer.NewSharedInformerFactoryWithOptions(fakeAppsClientset, 0, informer.WithNamespace(""), informer.WithTweakListOptions(func(_ *metav1.ListOptions) {}))
 	projInformer := factory.Argoproj().V1alpha1().AppProjects().Informer()
 	go projInformer.Run(ctx.Done())
 	if !k8scache.WaitForCacheSync(ctx.Done(), projInformer.HasSynced) {
@@ -713,7 +713,7 @@ func newEnforcer(kubeclientset *fake.Clientset) *rbac.Enforcer {
 	enforcer := rbac.NewEnforcer(kubeclientset, testNamespace, common.ArgoCDRBACConfigMapName, nil)
 	_ = enforcer.SetBuiltinPolicy(assets.BuiltinPolicyCSV)
 	enforcer.SetDefaultRole("role:admin")
-	enforcer.SetClaimsEnforcerFunc(func(claims jwt.Claims, rvals ...interface{}) bool {
+	enforcer.SetClaimsEnforcerFunc(func(_ jwt.Claims, _ ...any) bool {
 		return true
 	})
 	return enforcer
