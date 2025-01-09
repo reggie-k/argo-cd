@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"reflect"
 	"runtime/debug"
+
+	coreruntime "runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -423,6 +425,7 @@ func (ctrl *ApplicationController) handleObjectUpdated(managedByApp map[string]b
 				managedByApp[app.InstanceName(ctrl.namespace)] = true
 			}
 		}
+
 	}
 	for appName, isManagedResource := range managedByApp {
 		// The appName is given as <namespace>_<name>, but the indexer needs it
@@ -944,6 +947,7 @@ func (ctrl *ApplicationController) requestAppRefresh(appName string, compareWith
 			ctrl.refreshRequestedApps[key] = compareWith.Max(ctrl.refreshRequestedApps[key])
 			ctrl.refreshRequestedAppsMutex.Unlock()
 		}
+		log.Infof("******** goRoutine %d Requesting app refresh for %s", getGoroutineID(), key)
 		if after != nil {
 			ctrl.appRefreshQueue.AddAfter(key, *after)
 		} else {
@@ -1586,14 +1590,27 @@ func (ctrl *ApplicationController) PatchAppWithWriteBack(ctx context.Context, na
 	return patchedApp, err
 }
 
+func getGoroutineID() int {
+	var buf [64]byte
+	n := coreruntime.Stack(buf[:], false)
+	idField := strings.Fields(strings.TrimPrefix(string(buf[:n]), "goroutine "))[0]
+	id, err := strconv.Atoi(idField)
+	if err != nil {
+		panic(fmt.Sprintf("cannot get goroutine id: %v", err))
+	}
+	return id
+}
+
 func (ctrl *ApplicationController) processAppRefreshQueueItem() (processNext bool) {
 	patchMs := time.Duration(0) // time spent in doing patch/update calls
 	setOpMs := time.Duration(0) // time spent in doing Operation patch calls in autosync
 	appKey, shutdown := ctrl.appRefreshQueue.Get()
+	log.Infof("************** processAppRefreshQueueItem goRoutineId %d appKey %s", getGoroutineID(), appKey)
 	if shutdown {
 		processNext = false
 		return
 	}
+
 	processNext = true
 	defer func() {
 		if r := recover(); r != nil {
@@ -1601,6 +1618,7 @@ func (ctrl *ApplicationController) processAppRefreshQueueItem() (processNext boo
 		}
 		// We want to have app operation update happen after the sync, so there's no race condition
 		// and app updates not proceeding. See https://github.com/argoproj/argo-cd/issues/18500.
+		log.Infof("************** processAppRefreshQueueItem goRoutineId %d adding to operationsQueue", getGoroutineID())
 		ctrl.appOperationQueue.AddRateLimited(appKey)
 		ctrl.appRefreshQueue.Done(appKey)
 	}()
@@ -1625,6 +1643,7 @@ func (ctrl *ApplicationController) processAppRefreshQueueItem() (processNext boo
 		return
 	}
 	app := origApp.DeepCopy()
+	// if app.Operation && app.Operation.Sync.Revision &&
 	logCtx := getAppLog(app).WithFields(log.Fields{
 		"comparison-level": comparisonLevel,
 		"dest-server":      origApp.Spec.Destination.Server,
@@ -2005,6 +2024,7 @@ func (ctrl *ApplicationController) persistAppStatus(orig *appv1.Application, new
 		}
 		delete(newAnnotations, appv1.AnnotationKeyRefresh)
 		delete(newAnnotations, appv1.AnnotationKeyHydrate)
+		log.Infof("************** persistAppStatus goRoutineId %d deleted annotations ", getGoroutineID())
 	}
 	patch, modified, err := createMergePatch(
 		&appv1.Application{ObjectMeta: metav1.ObjectMeta{Annotations: orig.GetAnnotations()}, Status: orig.Status},
@@ -2017,6 +2037,8 @@ func (ctrl *ApplicationController) persistAppStatus(orig *appv1.Application, new
 		logCtx.Infof("No status changes. Skipping patch")
 		return
 	}
+
+	log.Infof("************** persistAppStatus goRoutineId %d patch %s", getGoroutineID(), string(patch))
 	// calculate time for path call
 	start := time.Now()
 	defer func() {
@@ -2373,6 +2395,7 @@ func (ctrl *ApplicationController) newApplicationInformerAndLister() (cache.Shar
 				}
 				key, err := cache.MetaNamespaceKeyFunc(obj)
 				if err == nil {
+					log.Infof("************** NewApplicationLister goRoutineId %d ading to refresh queue", getGoroutineID())
 					ctrl.appRefreshQueue.AddRateLimited(key)
 				}
 				newApp, newOK := obj.(*appv1.Application)
@@ -2409,6 +2432,7 @@ func (ctrl *ApplicationController) newApplicationInformerAndLister() (cache.Shar
 
 				ctrl.requestAppRefresh(newApp.QualifiedName(), compareWith, delay)
 				if !newOK || (delay != nil && *delay != time.Duration(0)) {
+					log.Infof("************** NewApplicationInfiormerAndLister goRoutineId %d ading to operation queue", getGoroutineID())
 					ctrl.appOperationQueue.AddRateLimited(key)
 				}
 				if ctrl.hydrator != nil {
@@ -2425,6 +2449,7 @@ func (ctrl *ApplicationController) newApplicationInformerAndLister() (cache.Shar
 				key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 				if err == nil {
 					// for deletes, we immediately add to the refresh queue
+					log.Infof("************** NewApplicationInformerAndLister goRoutineId %d ading to refresh queue", getGoroutineID())
 					ctrl.appRefreshQueue.Add(key)
 				}
 				delApp, delOK := obj.(*appv1.Application)

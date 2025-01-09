@@ -873,6 +873,7 @@ func SetAppOperation(appIf v1alpha1.ApplicationInterface, appName string, op *ar
 			return nil, ErrAnotherOperationInProgress
 		}
 		a.Operation = op
+		log.Infof("********** SetAppOperation setting operation sync %s", op.Sync)
 		a.Status.OperationState = nil
 		a, err = appIf.Update(context.Background(), a, metav1.UpdateOptions{})
 		if op.Sync == nil {
