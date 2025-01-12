@@ -159,10 +159,24 @@ func NewRepoCredsAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Comma
 			conn, repoIf := headless.NewClientOrDie(clientOpts, c).NewRepoCredsClientOrDie()
 			defer io.Close(conn)
 
+			// Specifying bearerToken is only valid for HTTPS repositories
+			if repo.BearerToken != "" {
+				if !git.IsHTTPSURL(repo.URL) {
+
+					err := stderrors.New("--bearer-token is only supported for HTTPS repositories")
+					errors.CheckError(err)
+				}
+			}
 			// If the user set a username, but didn't supply password via --password,
 			// then we prompt for it
 			if repo.Username != "" && repo.Password == "" {
 				repo.Password = cli.PromptPassword(repo.Password)
+			}
+
+			// Either the password or the bearer token must be set, but not both
+			if repo.BearerToken != "" && repo.Password != "" {
+				err := stderrors.New("only --bearer-token or --password is allowed, not both")
+				errors.CheckError(err)
 			}
 
 			repoCreateReq := repocredspkg.RepoCredsCreateRequest{
@@ -177,6 +191,7 @@ func NewRepoCredsAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Comma
 	}
 	command.Flags().StringVar(&repo.Username, "username", "", "username to the repository")
 	command.Flags().StringVar(&repo.Password, "password", "", "password to the repository")
+	command.Flags().StringVar(&repo.BearerToken, "bearer-token", "", "bearer token to the repository")
 	command.Flags().StringVar(&sshPrivateKeyPath, "ssh-private-key-path", "", "path to the private ssh key (e.g. ~/.ssh/id_rsa)")
 	command.Flags().StringVar(&tlsClientCertPath, "tls-client-cert-path", "", "path to the TLS client cert (must be PEM format)")
 	command.Flags().StringVar(&tlsClientCertKeyPath, "tls-client-cert-key-path", "", "path to the TLS client cert's key path (must be PEM format)")

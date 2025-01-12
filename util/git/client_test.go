@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -835,4 +837,54 @@ func Test_nativeGitClient_CommitAndPush(t *testing.T) {
 	require.NoError(t, err)
 	actualCommitHash := strings.TrimSpace(string(gitCurrentCommitHash))
 	require.Equal(t, expectedCommitHash, actualCommitHash)
+}
+func TestNewAuth(t *testing.T) {
+	tests := []struct {
+		name     string
+		repoURL  string
+		creds    Creds
+		expected transport.AuthMethod
+		wantErr  bool
+	}{
+
+		{
+			name:    "HTTPSCreds with bearer token",
+			repoURL: "https://github.com/org/repo.git",
+			creds: HTTPSCreds{
+				bearerToken: "test-token",
+			},
+			expected: &githttp.TokenAuth{Token: "test-token"},
+			wantErr:  false,
+		},
+		{
+			name:    "HTTPSCreds with basic auth",
+			repoURL: "https://github.com/org/repo.git",
+			creds: HTTPSCreds{
+				username: "test-user",
+				password: "test-password",
+			},
+			expected: &githttp.BasicAuth{Username: "test-user", Password: "test-password"},
+			wantErr:  false,
+		},
+		{
+			name:    "HTTPSCreds with basic auth no username",
+			repoURL: "https://github.com/org/repo.git",
+			creds: HTTPSCreds{
+				password: "test-password",
+			},
+			expected: &githttp.BasicAuth{Username: "x-access-token", Password: "test-password"},
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			auth, err := newAuth(tt.repoURL, tt.creds)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("newAuth() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.expected, auth)
+		})
+	}
 }

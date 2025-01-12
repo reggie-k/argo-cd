@@ -598,6 +598,7 @@ export interface Repository {
     project?: string;
     username?: string;
     password?: string;
+    bearerToken?: string;
     tlsClientCertData?: string;
     tlsClientCertKey?: string;
     proxy?: string;

@@ -5,6 +5,7 @@ import {EditablePanel, EditablePanelItem} from '../../../shared/components';
 import * as models from '../../../shared/models';
 import {NewHTTPSRepoParams} from '../repos-list/repos-list';
 import {AuthSettingsCtx} from '../../../shared/context';
+import { be } from 'date-fns/locale';
 
 export const RepoDetails = (props: {repo: models.Repository; save?: (params: NewHTTPSRepoParams) => Promise<void>}) => {
     const useAuthSettingsCtx = React.useContext(AuthSettingsCtx);
@@ -34,6 +35,11 @@ export const RepoDetails = (props: {repo: models.Repository; save?: (params: New
                 title: 'Password (optional)',
                 view: repository.username ? '******' : '',
                 edit: (formApi: FormApi) => <FormField formApi={formApi} field='password' component={Text} componentProps={{type: 'password'}} />
+            },
+            {
+                title: 'Bearer token (optional)',
+                view: repository.username ? '******' : '',
+                edit: (formApi: FormApi) => <FormField formApi={formApi} field='bearerToken' component={Text} componentProps={{type: 'password'}} />
             }
         ];
 
@@ -77,6 +83,7 @@ export const RepoDetails = (props: {repo: models.Repository; save?: (params: New
         url: repo.repo,
         username: repo.username || '',
         password: repo.password || '',
+        bearerToken: repo.bearerToken || '',
         tlsClientCertData: repo.tlsClientCertData || '',
         tlsClientCertKey: repo.tlsClientCertKey || '',
         insecure: repo.insecure || false,
@@ -93,13 +100,15 @@ export const RepoDetails = (props: {repo: models.Repository; save?: (params: New
             values={repo}
             validate={input => ({
                 username: !input.username && input.password && 'Username is required if password is given.',
-                password: !input.password && input.username && 'Password is required if username is given.'
+                password: !input.password && input.username && 'Password is required if username is given.',
+                bearerToken: input.password && input.bearerToken && 'Either the password or the bearer token must be set, but not both.'
             })}
             save={async input => {
                 const params: NewHTTPSRepoParams = {...newRepo, write};
                 params.name = input.name || '';
                 params.username = input.username || '';
                 params.password = input.password || '';
+                params.bearerToken = input.bearerToken || '';
                 save(params);
             }}
             title='CONNECTED REPOSITORY'

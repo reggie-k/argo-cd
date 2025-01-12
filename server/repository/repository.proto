@@ -89,6 +89,8 @@ message RepoAccessQuery {
 	string gcpServiceAccountKey = 18;
 	// Whether to force HTTP basic auth
 	bool forceHttpBasicAuth = 19;
+	// BearerToken contains the bearer token used for Git auth at the repo server
+	string bearerToken = 20;
 }
 
 message RepoResponse {}
