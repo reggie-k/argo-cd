@@ -5,7 +5,6 @@ import {EditablePanel, EditablePanelItem} from '../../../shared/components';
 import * as models from '../../../shared/models';
 import {NewHTTPSRepoParams} from '../repos-list/repos-list';
 import {AuthSettingsCtx} from '../../../shared/context';
-import { be } from 'date-fns/locale';
 
 export const RepoDetails = (props: {repo: models.Repository; save?: (params: NewHTTPSRepoParams) => Promise<void>}) => {
     const useAuthSettingsCtx = React.useContext(AuthSettingsCtx);
