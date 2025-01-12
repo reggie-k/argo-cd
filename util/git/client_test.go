@@ -838,6 +838,7 @@ func Test_nativeGitClient_CommitAndPush(t *testing.T) {
 	actualCommitHash := strings.TrimSpace(string(gitCurrentCommitHash))
 	require.Equal(t, expectedCommitHash, actualCommitHash)
 }
+
 func TestNewAuth(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -846,7 +847,6 @@ func TestNewAuth(t *testing.T) {
 		expected transport.AuthMethod
 		wantErr  bool
 	}{
-
 		{
 			name:    "HTTPSCreds with bearer token",
 			repoURL: "https://github.com/org/repo.git",

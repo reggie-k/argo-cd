@@ -162,7 +162,6 @@ func NewRepoCredsAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Comma
 			// Specifying bearerToken is only valid for HTTPS repositories
 			if repo.BearerToken != "" {
 				if !git.IsHTTPSURL(repo.URL) {
-
 					err := stderrors.New("--bearer-token is only supported for HTTPS repositories")
 					errors.CheckError(err)
 				}
