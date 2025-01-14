@@ -22,6 +22,14 @@ import (
 	"github.com/argoproj/argo-cd/v3/util/io"
 )
 
+func validateBearerTokenAndPasswordCombo(bearerToken string, password string) {
+	// Either the password or the bearer token must be set, but not both
+	if bearerToken != "" && password != "" {
+		err := stderrors.New("only --bearer-token or --password is allowed, not both")
+		errors.CheckError(err)
+	}
+}
+
 // NewRepoCommand returns a new instance of an `argocd repo` command
 func NewRepoCommand(clientOpts *argocdclient.ClientOptions) *cobra.Command {
 	command := &cobra.Command{
@@ -196,11 +204,7 @@ func NewRepoAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Command {
 				repoOpts.Repo.Password = cli.PromptPassword(repoOpts.Repo.Password)
 			}
 
-			// Either the password or the bearer token must be set, but not both
-			if repoOpts.Repo.BearerToken != "" && repoOpts.Repo.Password != "" {
-				err := stderrors.New("only --bearer-token or --password is allowed, not both")
-				errors.CheckError(err)
-			}
+			validateBearerTokenAndPasswordCombo(repoOpts.Repo.BearerToken, repoOpts.Repo.Password)
 
 			// We let the server check access to the repository before adding it. If
 			// it is a private repo, but we cannot access with with the credentials

@@ -49,6 +49,16 @@ func NewRepoCredsCommand(clientOpts *argocdclient.ClientOptions) *cobra.Command 
 	return command
 }
 
+func validateBearerTokenForHTTPSRepoOnly(bearerToken string, isHTTPS bool) {
+	// Specifying bearerToken is only valid for HTTPS repositories
+	if bearerToken != "" {
+		if !isHTTPS {
+			err := stderrors.New("--bearer-token is only supported for HTTPS repositories")
+			errors.CheckError(err)
+		}
+	}
+}
+
 // NewRepoCredsAddCommand returns a new instance of an `argocd repocreds add` command
 func NewRepoCredsAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Command {
 	var (
@@ -160,23 +170,15 @@ func NewRepoCredsAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Comma
 			defer io.Close(conn)
 
 			// Specifying bearerToken is only valid for HTTPS repositories
-			if repo.BearerToken != "" {
-				if !git.IsHTTPSURL(repo.URL) {
-					err := stderrors.New("--bearer-token is only supported for HTTPS repositories")
-					errors.CheckError(err)
-				}
-			}
+			validateBearerTokenForHTTPSRepoOnly(repo.BearerToken, git.IsHTTPSURL(repo.URL))
+
 			// If the user set a username, but didn't supply password via --password,
 			// then we prompt for it
 			if repo.Username != "" && repo.Password == "" {
 				repo.Password = cli.PromptPassword(repo.Password)
 			}
 
-			// Either the password or the bearer token must be set, but not both
-			if repo.BearerToken != "" && repo.Password != "" {
-				err := stderrors.New("only --bearer-token or --password is allowed, not both")
-				errors.CheckError(err)
-			}
+			validateBearerTokenAndPasswordCombo(repo.BearerToken, repo.Password)
 
 			repoCreateReq := repocredspkg.RepoCredsCreateRequest{
 				Creds:  &repo,

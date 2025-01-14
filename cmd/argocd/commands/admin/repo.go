@@ -24,6 +24,14 @@ const (
 	repoSecretPrefix = "repo"
 )
 
+func validateBearerTokenAndPasswordCombo(bearerToken string, password string) {
+	// Either the password or the bearer token must be set, but not both
+	if bearerToken != "" && password != "" {
+		err := stderrors.New("only --bearer-token or --password is allowed, not both")
+		errors.CheckError(err)
+	}
+}
+
 func NewRepoCommand() *cobra.Command {
 	command := &cobra.Command{
 		Use:   "repo",
@@ -137,11 +145,7 @@ func NewGenRepoSpecCommand() *cobra.Command {
 				repoOpts.Repo.Password = cli.PromptPassword(repoOpts.Repo.Password)
 			}
 
-			// Either the password or the bearer token must be set, but not both
-			if repoOpts.Repo.BearerToken != "" && repoOpts.Repo.Password != "" {
-				err := stderrors.New("only --bearer-token or --password is allowed, not both")
-				errors.CheckError(err)
-			}
+			validateBearerTokenAndPasswordCombo(repoOpts.Repo.BearerToken, repoOpts.Repo.Password)
 
 			argoCDCM := &corev1.ConfigMap{
 				TypeMeta: metav1.TypeMeta{
