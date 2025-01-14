@@ -18,6 +18,9 @@ argocd admin repo generate-spec REPOURL [flags]
   # Add a Git repository via SSH on a non-default port - need to use ssh:// style URLs here
   argocd admin repo generate-spec ssh://git@git.example.com:2222/repos/repo --ssh-private-key-path ~/id_rsa
 
+  # Add a private Git repository via HTTPS using username/password and TLS client certificates:
+  argocd admin repo generate-spec https://git.example.com/repos/repo --username git --password secret --tls-client-cert-path ~/mycert.crt --tls-client-cert-key-path ~/mycert.key
+
   # Add a private Git repository via HTTPS using bearer token:
   argocd admin repo generate-spec https://git.example.com/repos/repo --bearer-token secret-token
 
