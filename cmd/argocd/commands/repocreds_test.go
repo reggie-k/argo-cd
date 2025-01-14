@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"os/exec"
 	"testing"
@@ -63,7 +64,8 @@ func TestValidateBearerTokenForHTTPSRepoOnly(t *testing.T) {
 				var stderr bytes.Buffer
 				cmd.Stderr = &stderr
 				err := cmd.Run()
-				if e, ok := err.(*exec.ExitError); ok && !e.Success() {
+				var exitErr *exec.ExitError
+				if errors.As(err, &exitErr) && !exitErr.Success() {
 					assert.Contains(t, stderr.String(), tt.errorMsg)
 					return
 				}
