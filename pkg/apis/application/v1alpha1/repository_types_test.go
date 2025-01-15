@@ -3,8 +3,9 @@ package v1alpha1
 import (
 	"testing"
 
-	"github.com/argoproj/argo-cd/v3/util/git"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/argoproj/argo-cd/v3/util/git"
 )
 
 func TestGetGitCreds(t *testing.T) {
