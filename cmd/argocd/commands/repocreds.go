@@ -11,6 +11,7 @@ import (
 
 	"github.com/argoproj/argo-cd/v3/cmd/argocd/commands/headless"
 	"github.com/argoproj/argo-cd/v3/cmd/argocd/commands/utils"
+	cmdutil "github.com/argoproj/argo-cd/v3/cmd/util"
 	"github.com/argoproj/argo-cd/v3/common"
 	argocdclient "github.com/argoproj/argo-cd/v3/pkg/apiclient"
 	repocredspkg "github.com/argoproj/argo-cd/v3/pkg/apiclient/repocreds"
@@ -47,16 +48,6 @@ func NewRepoCredsCommand(clientOpts *argocdclient.ClientOptions) *cobra.Command 
 	command.AddCommand(NewRepoCredsListCommand(clientOpts))
 	command.AddCommand(NewRepoCredsRemoveCommand(clientOpts))
 	return command
-}
-
-func validateBearerTokenForHTTPSRepoOnly(bearerToken string, isHTTPS bool) {
-	// Specifying bearerToken is only valid for HTTPS repositories
-	if bearerToken != "" {
-		if !isHTTPS {
-			err := stderrors.New("--bearer-token is only supported for HTTPS repositories")
-			errors.CheckError(err)
-		}
-	}
 }
 
 // NewRepoCredsAddCommand returns a new instance of an `argocd repocreds add` command
@@ -170,7 +161,7 @@ func NewRepoCredsAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Comma
 			defer io.Close(conn)
 
 			// Specifying bearerToken is only valid for HTTPS repositories
-			validateBearerTokenForHTTPSRepoOnly(repo.BearerToken, git.IsHTTPSURL(repo.URL))
+			cmdutil.ValidateBearerTokenForHTTPSRepoOnly(repo.BearerToken, git.IsHTTPSURL(repo.URL))
 
 			// If the user set a username, but didn't supply password via --password,
 			// then we prompt for it
@@ -178,7 +169,8 @@ func NewRepoCredsAddCommand(clientOpts *argocdclient.ClientOptions) *cobra.Comma
 				repo.Password = cli.PromptPassword(repo.Password)
 			}
 
-			validateBearerTokenAndPasswordCombo(repo.BearerToken, repo.Password)
+			cmdutil.ValidateBearerTokenAndPasswordCombo(repo.BearerToken, repo.Password)
+			cmdutil.ValidateBearerTokenForGitOnly(repo.BearerToken, repo.Type)
 
 			repoCreateReq := repocredspkg.RepoCredsCreateRequest{
 				Creds:  &repo,

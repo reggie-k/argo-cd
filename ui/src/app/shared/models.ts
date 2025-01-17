@@ -615,6 +615,7 @@ export interface RepositoryList extends ItemsList<Repository> {}
 export interface RepoCreds {
     url: string;
     username?: string;
+    bearerToken?: string;
 }
 
 export interface RepoCredsList extends ItemsList<RepoCreds> {}
