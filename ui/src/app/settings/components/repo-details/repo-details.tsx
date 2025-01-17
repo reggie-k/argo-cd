@@ -34,13 +34,16 @@ export const RepoDetails = (props: {repo: models.Repository; save?: (params: New
                 title: 'Password (optional)',
                 view: repository.username ? '******' : '',
                 edit: (formApi: FormApi) => <FormField formApi={formApi} field='password' component={Text} componentProps={{type: 'password'}} />
-            },
-            {
+            }
+        ];
+
+        if (repository.type === 'git') {
+            items.push({
                 title: 'Bearer token (optional)',
                 view: repository.username ? '******' : '',
                 edit: (formApi: FormApi) => <FormField formApi={formApi} field='bearerToken' component={Text} componentProps={{type: 'password'}} />
-            }
-        ];
+            });
+        }
 
         if (useAuthSettingsCtx?.hydratorEnabled) {
             // Insert this item at index 1.
