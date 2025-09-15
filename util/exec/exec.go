@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -183,10 +184,31 @@ func RunCommandExt(cmd *exec.Cmd, opts CmdOpts) (string, error) {
 	args := strings.Join(cmd.Args, " ")
 	logCtx.WithFields(logrus.Fields{"dir": cmd.Dir}).Info(redactor(args))
 
+	// Helper: debug whether HEAD.lock exists under the current working directory
+	logHeadLockStatus := func(where string) {
+		if cmd.Dir == "" {
+			return
+		}
+		lockPath := filepath.Join(cmd.Dir, ".git", "HEAD.lock")
+		_, statErr := os.Stat(lockPath)
+		exists := statErr == nil
+		logCtx.WithFields(logrus.Fields{
+			"headLockPath":   lockPath,
+			"headLockExists": exists,
+			"where":          where,
+		}).Info("HEAD.lock status")
+	}
+
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+
+	// Configure the child to run in its own process group so we can signal the whole group on timeout/cancel.
+	// On Unix this sets Setpgid; on Windows this is a no-op.
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = newSysProcAttr(true)
+	}
 
 	start := time.Now()
 	err = cmd.Start()
@@ -229,15 +251,20 @@ func RunCommandExt(cmd *exec.Cmd, opts CmdOpts) (string, error) {
 	// noinspection ALL
 	case <-timoutCh:
 		// send timeout signal
-		_ = cmd.Process.Signal(timeoutBehavior.Signal)
+		// signal the process group (negative PID) so children are terminated as well
+		if cmd.Process != nil {
+			_ = sysCallSignal(-cmd.Process.Pid, timeoutBehavior.Signal)
+		}
 		// wait on timeout signal and fallback to fatal timeout signal
 		if timeoutBehavior.ShouldWait {
 			select {
 			case <-done:
 			case <-fatalTimeoutCh:
-				// upgrades to SIGKILL if cmd does not respect SIGTERM
-				_ = cmd.Process.Signal(fatalTimeoutBehaviour)
-				// now original cmd should exit immediately after SIGKILL
+				// upgrades to fatal signal (default SIGKILL) if cmd does not respect the initial signal
+				if cmd.Process != nil {
+					_ = sysCallSignal(-cmd.Process.Pid, fatalTimeoutBehaviour)
+				}
+				// now original cmd should exit immediately after fatal signal
 				<-done
 				// return error with a marker indicating that cmd exited only after fatal SIGKILL
 				output := stdout.String()
@@ -245,6 +272,7 @@ func RunCommandExt(cmd *exec.Cmd, opts CmdOpts) (string, error) {
 					output += stderr.String()
 				}
 				logCtx.WithFields(logrus.Fields{"duration": time.Since(start)}).Debug(redactor(output))
+				logHeadLockStatus("fatal-timeout")
 				err = newCmdError(redactor(args), fmt.Errorf("fatal timeout after %v", timeout+fatalTimeout), "")
 				logCtx.Error(err.Error())
 				return strings.TrimSuffix(output, "\n"), err
@@ -256,6 +284,7 @@ func RunCommandExt(cmd *exec.Cmd, opts CmdOpts) (string, error) {
 			output += stderr.String()
 		}
 		logCtx.WithFields(logrus.Fields{"duration": time.Since(start)}).Debug(redactor(output))
+		logHeadLockStatus("timeout")
 		err = newCmdError(redactor(args), fmt.Errorf("timeout after %v", timeout), "")
 		logCtx.Error(err.Error())
 		return strings.TrimSuffix(output, "\n"), err
@@ -270,6 +299,7 @@ func RunCommandExt(cmd *exec.Cmd, opts CmdOpts) (string, error) {
 			if !opts.SkipErrorLogging {
 				logCtx.Error(err.Error())
 			}
+			logHeadLockStatus("done-error")
 			return strings.TrimSuffix(output, "\n"), err
 		}
 	}
@@ -278,6 +308,7 @@ func RunCommandExt(cmd *exec.Cmd, opts CmdOpts) (string, error) {
 		output += stderr.String()
 	}
 	logCtx.WithFields(logrus.Fields{"duration": time.Since(start)}).Debug(redactor(output))
+	logHeadLockStatus("done-success")
 
 	return strings.TrimSuffix(output, "\n"), nil
 }
