@@ -2656,20 +2656,20 @@ func directoryPermissionInitializer(rootPath string) goio.Closer {
 	})
 }
 
-// removeStaleGitLocks best-effort removes common stale git lock files in the repository.
-// It is safe to call while holding the per-repo lock and before running any git commands.
+// // removeStaleGitLocks best-effort removes common stale git lock files in the repository.
+// // It is safe to call while holding the per-repo lock and before running any git commands.
 
-func removeStaleGitLocks(repoRoot string) {
-	path := filepath.Join(repoRoot, ".git", "HEAD.lock")
-	if _, err := os.Stat(path); err == nil {
-		log.Warnf("HEAD.lock present in git repository %s, removing it", repoRoot)
-		if rmErr := os.Remove(path); rmErr == nil {
-			log.Debugf("Removed stale git lock %s", path)
-		} else if !os.IsNotExist(rmErr) {
-			log.Warnf("Failed to remove git lock %s: %v", path, rmErr)
-		}
-	}
-}
+// func removeStaleGitLocks(repoRoot string) {
+// 	path := filepath.Join(repoRoot, ".git", "HEAD.lock")
+// 	if _, err := os.Stat(path); err == nil {
+// 		log.Warnf("HEAD.lock present in git repository %s, removing it", repoRoot)
+// 		if rmErr := os.Remove(path); rmErr == nil {
+// 			log.Debugf("Removed stale git lock %s", path)
+// 		} else if !os.IsNotExist(rmErr) {
+// 			log.Warnf("Failed to remove git lock %s: %v", path, rmErr)
+// 		}
+// 	}
+// }
 
 // checkoutRevision is a convenience function to initialize a repo, fetch, and checkout a revision
 // Returns the 40 character commit SHA after the checkout has been performed
@@ -2728,7 +2728,7 @@ func fetch(gitClient git.Client, targetRevisions []string) error {
 
 func checkoutRevision(gitClient git.Client, revision string, submoduleEnabled bool) error {
 
-	removeStaleGitLocks(gitClient.Root())
+	// removeStaleGitLocks(gitClient.Root())
 
 	err := gitClient.Init()
 	if err != nil {
