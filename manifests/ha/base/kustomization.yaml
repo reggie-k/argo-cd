@@ -11,8 +11,8 @@ patches:
 
 images:
 - name: quay.io/argoproj/argocd
-  newName: quay.io/argoproj/argocd
-  newTag: v3.3.0-rc1
+  newName: quay.io/reggie-k/argocd-test
+  newTag: v3.3.0-rc2
 resources:
 - ../../base/application-controller
 - ../../base/applicationset-controller
