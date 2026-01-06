@@ -1,4 +1,4 @@
-name: Publish and Sign Container Image
+name: Publish and Sign Container Image blah blah
 on:
   workflow_call:
     inputs:
