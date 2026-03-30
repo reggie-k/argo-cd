@@ -20,4 +20,4 @@ mkdir -p "${DOWNLOADS}"
 tmpdir=$(mktemp -d)
 tar -C "${tmpdir}" -xf "${DOWNLOADS}/${TARGET_FILE}"
 sudo install -m 0755 "${tmpdir}/goreleaser" "${BIN:-/usr/local/bin}/goreleaser"
-goreleaser version
+goreleaser --version
