@@ -12,7 +12,8 @@ checksumfile="goreleaser-${tag}-linux-x86_64.tar.gz.sha256"
 
 wget "https://github.com/goreleaser/goreleaser/releases/download/${tag}/checksums.txt"
 
-if ! grep -F "$tarball" checksums.txt >"$checksumfile"
+# Match the tarball line only: grep -F "$tarball" also matches *.tar.gz.sbom.json (substring).
+if ! awk -v t="$tarball" '$NF == t { print; n = 1; exit } END { exit !n }' checksums.txt >"$checksumfile"
 then
 	rm -f "$checksumfile" checksums.txt
 	echo "No line for ${tarball} in checksums.txt" >&2
