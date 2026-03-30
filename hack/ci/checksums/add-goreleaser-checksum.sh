@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+# Usage: ./add-goreleaser-checksum.sh v2.14.3  # use the desired release tag
+# Writes hack/ci/checksums/goreleaser-<tag>-linux-x86_64.tar.gz.sha256 (like helm-v<ver>-linux-amd64…).
+# Older version files are left in place; add a new file when bumping goreleaser_version.
+
+set -e
+
+tag=$1
+tarball=goreleaser_Linux_x86_64.tar.gz
+checksumfile="goreleaser-${tag}-linux-x86_64.tar.gz.sha256"
+
+wget "https://github.com/goreleaser/goreleaser/releases/download/${tag}/checksums.txt"
+
+if ! grep -F "$tarball" checksums.txt >"$checksumfile"
+then
+	rm -f "$checksumfile" checksums.txt
+	echo "No line for ${tarball} in checksums.txt" >&2
+	exit 1
+fi
+
+rm checksums.txt
+
+script_dir=$(cd "$(dirname "$0")" && pwd)
+outname="${script_dir}/${checksumfile}"
+mv "$checksumfile" "$outname"
