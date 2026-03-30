@@ -11,7 +11,7 @@ GORELEASER_VERSION="${GORELEASER_VERSION:-${goreleaser_version}}"
 
 export TARGET_FILE=goreleaser_Linux_x86_64.tar.gz
 export DOWNLOADS="${DOWNLOADS:-/tmp/goreleaser-dl}"
-export CHKSUM_FILE="${SCRIPT_DIR}/checksums/${TARGET_FILE}.sha256"
+export CHKSUM_FILE="${SCRIPT_DIR}/checksums/goreleaser-${GORELEASER_VERSION}-linux-x86_64.tar.gz.sha256"
 
 mkdir -p "${DOWNLOADS}"
 [ -e "${DOWNLOADS}/${TARGET_FILE}" ] || curl -sLf --retry 3 -o "${DOWNLOADS}/${TARGET_FILE}" \
