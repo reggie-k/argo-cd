@@ -106,7 +106,7 @@ jobs:
       id-token: write # for creating OIDC tokens for signing.
       packages: write # for uploading attestations. (https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#known-issues)
     # Must be referenced by a tag. https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#referencing-the-slsa-generator
-     # Updates to the tag have to be reflected in slsa_generator_tag above
+    # The tag needs to be updated here and in slsa_generator_tag above
     if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
@@ -180,7 +180,9 @@ jobs:
             echo 'dist/artifacts.json missing after goreleaser release' >&2
             exit 1
           fi
-          # Random delimiter: the value must never contain the closing line (GitHub multiline output format).
+          # We need to explicitly write the artifacts.json to $GITHUB_OUTPUT when running goreleaser ourselves,
+          # and it is multiline, so we need to use a random delimiter. 
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#multiline-strings
           delim="GORELEASER_ARTIFACTS_JSON_$(openssl rand -hex 16)"
           {
             echo "artifacts<<${delim}"
