@@ -180,10 +180,12 @@ jobs:
             echo 'dist/artifacts.json missing after goreleaser release' >&2
             exit 1
           fi
+          # Random delimiter: the value must never contain the closing line (GitHub multiline output format).
+          delim="GORELEASER_ARTIFACTS_JSON_$(openssl rand -hex 16)"
           {
-            echo 'artifacts<<GORELEASER_ARTIFACTS_JSON'
+            echo "artifacts<<${delim}"
             cat dist/artifacts.json
-            echo 'GORELEASER_ARTIFACTS_JSON'
+            echo "${delim}"
           } >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
