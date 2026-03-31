@@ -184,11 +184,10 @@ jobs:
           # and it is multiline, so we need to use a random delimiter. 
           # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#multiline-strings
           delim="GORELEASER_ARTIFACTS_JSON_$(openssl rand -hex 16)"
-          {
-            echo "artifacts<<${delim}"
-            cat dist/artifacts.json
-            echo "${delim}"
-          } >> "$GITHUB_OUTPUT"
+          echo "artifacts<<${delim}" >> "$GITHUB_OUTPUT"
+          cat dist/artifacts.json >> "$GITHUB_OUTPUT"
+          echo "\n" >> "$GITHUB_OUTPUT"
+          echo "${delim}" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           KUBECTL_VERSION: ${{ env.KUBECTL_VERSION }}

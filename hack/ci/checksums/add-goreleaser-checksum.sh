@@ -1,6 +1,11 @@
 #!/usr/bin/env sh
 
+<<<<<<< HEAD
 # Usage: ./add-goreleaser-checksum.sh v2.14.3  # use the desired release tag
+=======
+# Usage: ./add-goreleaser-checksum.sh <release_tag>   
+# use the desired release tag, like v2.14.3
+>>>>>>> feb7e31d2 (Pin more gh actions versions (#69))
 # Writes hack/ci/checksums/goreleaser-<tag>-linux-x86_64.tar.gz.sha256 (like helm-v<ver>-linux-amd64…).
 # Older version files are left in place; add a new file when bumping goreleaser_version.
 
