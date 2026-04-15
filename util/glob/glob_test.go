@@ -289,7 +289,8 @@ func BenchmarkMatch_WithCache(b *testing.B) {
 	// Warm up the cache
 	Match(pattern, text)
 
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		Match(pattern, text)
 	}
 }
@@ -300,7 +301,8 @@ func BenchmarkMatch_WithoutCache(b *testing.B) {
 	pattern := "proj:*/app-*"
 	text := "proj:myproject/app-frontend"
 
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		compiled, err := extglob.Compile(pattern)
 		if err != nil {
 			b.Fatal(err)
@@ -313,7 +315,8 @@ func BenchmarkMatch_WithoutCache(b *testing.B) {
 func BenchmarkGlobCompile(b *testing.B) {
 	pattern := "proj:*/app-*"
 
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		_, _ = extglob.Compile(pattern)
 	}
 }
@@ -328,8 +331,8 @@ func BenchmarkMatch_RBACSimulation(b *testing.B) {
 	text := "proj:team-25/my-app"
 
 	// With caching: patterns are compiled once
-
-	for b.Loop() {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		for _, pattern := range patterns {
 			Match(pattern, text)
 		}
