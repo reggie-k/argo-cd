@@ -9,6 +9,10 @@ on:
 
 permissions: {}
 
+# Repository variable RELEASE_GORELEASER_ONLY=true (any repo): skip container image,
+# SBOM, and provenance jobs; run only setup-variables + goreleaser + post-release.
+# Use on a fork to test GitHub release / notes without Quay. Upstream leaves this unset.
+
 env:
   # renovate: datasource=golang-version packageName=golang
   GOLANG_VERSION: '1.26.0' # Note: go-version must also be set in job argocd-image.with.go-version
@@ -20,7 +24,7 @@ jobs:
       contents: read
       id-token: write # for creating OIDC tokens for signing.
       packages: write # used to push images to `ghcr.io` if used.
-    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
+    if: vars.RELEASE_GORELEASER_ONLY != 'true' && (github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true')
     uses: ./.github/workflows/image-reuse.yaml
     with:
       quay_image_name: ${{ needs.setup-variables.outputs.quay_image_name }}
@@ -35,7 +39,7 @@ jobs:
 
   setup-variables:
     name: Setup Release Variables
-    if: github.repository == 'argoproj/argo-cd' || (github.repository_owner != 'argoproj' && vars.ENABLE_FORK_RELEASES == 'true' && vars.IMAGE_NAMESPACE && vars.IMAGE_NAMESPACE != 'argoproj')
+    if: github.repository == 'argoproj/argo-cd' || (github.repository_owner != 'argoproj' && vars.ENABLE_FORK_RELEASES == 'true' && vars.IMAGE_NAMESPACE && vars.IMAGE_NAMESPACE != 'argoproj') || vars.RELEASE_GORELEASER_ONLY == 'true'
     runs-on: ubuntu-24.04
     outputs:
       is_pre_release: ${{ steps.var.outputs.is_pre_release }}
@@ -100,7 +104,7 @@ jobs:
       id-token: write # for creating OIDC tokens for signing.
       packages: write # for uploading attestations. (https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#known-issues)
     # Must be refernced by a tag. https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#referencing-the-slsa-generator
-    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
+    if: vars.RELEASE_GORELEASER_ONLY != 'true' && (github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true')
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ${{ needs.setup-variables.outputs.provenance_image }}
@@ -112,11 +116,9 @@ jobs:
   goreleaser:
     needs:
       - setup-variables
-      - argocd-image
-      - argocd-image-provenance
     permissions:
       contents: write # used for uploading assets
-    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
+    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true' || vars.RELEASE_GORELEASER_ONLY == 'true'
     runs-on: ubuntu-24.04
     env:
       GORELEASER_MAKE_LATEST: ${{ needs.setup-variables.outputs.is_latest_release }}
@@ -191,7 +193,7 @@ jobs:
       actions: read # for detecting the Github Actions environment
       id-token: write # Needed for provenance signing and ID
       contents: write #  Needed for release uploads
-    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
+    if: vars.RELEASE_GORELEASER_ONLY != 'true' && (github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true')
     # Must be refernced by a tag. https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#referencing-the-slsa-generator
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
@@ -209,7 +211,7 @@ jobs:
       contents: write # Needed for release uploads
     outputs:
       hashes: ${{ steps.sbom-hash.outputs.hashes }}
-    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
+    if: vars.RELEASE_GORELEASER_ONLY != 'true' && (github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true')
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
@@ -277,7 +279,7 @@ jobs:
       actions: read # for detecting the Github Actions environment
       id-token: write # Needed for provenance signing and ID
       contents: write #  Needed for release uploads
-    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
+    if: vars.RELEASE_GORELEASER_ONLY != 'true' && (github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true')
     # Must be referenced by a tag. https://github.com/slsa-framework/slsa-github-generator/blob/main/internal/builders/container/README.md#referencing-the-slsa-generator
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
@@ -294,7 +296,12 @@ jobs:
     permissions:
       contents: write # Needed to push commit to update stable tag
       pull-requests: write # Needed to create PR for VERSION update.
-    if: github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true'
+    if: >-
+      always() &&
+      needs.setup-variables.result == 'success' &&
+      needs.goreleaser.result == 'success' &&
+      (vars.RELEASE_GORELEASER_ONLY == 'true' || (needs.argocd-image.result == 'success' && needs.generate-sbom.result == 'success')) &&
+      (github.repository == 'argoproj/argo-cd' || needs.setup-variables.outputs.allow_fork_release == 'true' || vars.RELEASE_GORELEASER_ONLY == 'true')
     runs-on: ubuntu-24.04
     env:
       TAG_STABLE: ${{ needs.setup-variables.outputs.is_latest_release }}
