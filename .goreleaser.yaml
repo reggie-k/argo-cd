@@ -94,8 +94,9 @@ release:
 snapshot: #### To be removed for PR
   version_template: '2.6.0'
 
+# Avoid GitHub Compare API pagination (secondary rate limits on large ranges).
 changelog:
-  use: github
+  use: git
   sort: asc
   abbrev: 0
   groups: # Regex use RE2 syntax as defined here: https://github.com/google/re2/wiki/Syntax.
