@@ -10,20 +10,14 @@ on:
   issues:
     types: [opened, reopened]
   reaction: eyes
-  roles: all # ***** argo-cd specific: make sure the workflow will be executed for issue of any author, as by default it gets executed only for issue authors who are maintainers of the repo *****
 
-permissions:
-   # ***** argo-cd specific: instead of the default read-all, which does not include copilot, giving explicit permissions so that copilot can be invoked without a COPILOT_GITHUB_TOKEN secret
-   # https://github.github.com/gh-aw/reference/auth/
-   # *****
-  issues: read
-  contents: read
-  copilot-requests: write
+permissions: read-all
 
 network: defaults
 
-# This workflow runs often, so you can use a small model to keep costs down.
-engine: copilot
+# # This workflow runs often, so you can use a small model to keep costs down.
+# engine:
+#   model: small
 
 safe-outputs:
   add-labels:
@@ -39,17 +33,11 @@ safe-outputs:
 tools:
   web-fetch:
   github:
-    toolsets: [issues, labels, search, repos] # ***** argo-cd specific: added search and repos so that the agent also looks at the code when triaging the issue, as the default is triaging based on the issue description, comments and labels only. This results in more tokens being used *****
+    toolsets: [issues, labels]
     min-integrity: none # This workflow is allowed to examine and comment on any issues
 
 timeout-minutes: 10
-
-# ***** argo-cd specific: to prevent someone from spamming new issues and burning our API credit *****
-user-rate-limit:
-  max-runs-per-window: 3
-  window: 60
-
-source: githubnext/agentics/workflows/issue-triage.md@e15e57b40918dbca11b350c55d02ab61934afa75
+source: githubnext/agentics/workflows/issue-triage.md@1c6668b751c51af8571f01204ceffb19362e0f66
 ---
 
 # Agentic Triage
@@ -77,7 +65,7 @@ Do not make assumptions beyond what the issue content supports. Do not invent mi
 **Incomplete issues:** If the issue lacks enough detail for meaningful triage, add a comment that politely asks the author to provide the missing information:
 - For bugs: steps to reproduce, expected vs actual behavior, logs/errors, environment details.
 - For other issue types: equivalent details that would make the report actionable.
-- Apply a `needs-info` label if one exists in the repository.
+- Apply a `needs-info` or `question` label if one exists in the repository.
 
 Be specific about what is missing and why it is needed. Do not attempt to apply type or other labels to incomplete issues.
 
