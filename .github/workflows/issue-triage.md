@@ -8,7 +8,8 @@ description: |
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened, reopened, labeled]
+    names: [needs-triage] # ***** argo-cd specific: apply the "needs-triage" label to any issue to force a re-triage on demand, without reopening it *****
   reaction: eyes
   roles: all # ***** argo-cd specific: make sure the workflow will be executed for issue of any author, as by default it gets executed only for issue authors who are maintainers of the repo *****
 
