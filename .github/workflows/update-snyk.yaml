@@ -2,7 +2,7 @@ name: Snyk report update
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: '0 0 * * 0' # midnight every Sunday
+    - cron: '*/5 * * * *' # every 5 minutes
 
 permissions:
   contents: read
